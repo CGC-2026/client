@@ -1,13 +1,11 @@
 import { useThemeColor } from "@/hooks/useThemeColor";
 import Ionicons from '@expo/vector-icons/Ionicons';
-import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-native";
 import { Device } from "react-native-ble-plx";
 
 type DeviceItemProps = {
   device: Device;
   onPress: (device: Device) => void;
-  onDisconnect?: () => void;
   isConnecting: boolean;
   isDisabled: boolean;
   isPaired?: boolean;
@@ -16,13 +14,22 @@ type DeviceItemProps = {
 export default function DeviceItem({ 
   device, 
   onPress, 
-  onDisconnect,
   isConnecting, 
   isDisabled,
   isPaired = false
 }: DeviceItemProps) {
+  // Get theme colors
   const textColor = useThemeColor({}, "text");
-  const borderColor = useThemeColor({ light: "#F0F0F0", dark: "#303030" }, "background");
+  const textSecondary = useThemeColor({}, "textSecondary");
+  const borderColor = useThemeColor({}, "border");
+  const cardColor = useThemeColor({}, "card");
+  const cardPressedColor = useThemeColor({}, "cardPressed");
+  const cardHighlightedColor = useThemeColor({}, "cardHighlighted");
+  const tintColor = useThemeColor({}, "tint");
+  const successColor = useThemeColor({}, "success");
+  const signalHighColor = useThemeColor({}, "signalStrengthHigh");
+  const signalMedColor = useThemeColor({}, "signalStrengthMedium");
+  const signalLowColor = useThemeColor({}, "signalStrengthLow");
   
   const deviceName = device.name || "Unnamed Device";
   const signalStrength = getSignalStrength(device.rssi);
@@ -31,45 +38,43 @@ export default function DeviceItem({
     <Pressable
       style={({ pressed }) => [
         styles.deviceItem,
-        pressed ? styles.deviceItemPressed : {},
-        isPaired ? styles.pairedDeviceItem : {},
-        { borderColor },
+        { backgroundColor: cardColor, borderColor },
+        pressed ? { backgroundColor: cardPressedColor } : {},
+        isPaired ? { backgroundColor: cardHighlightedColor } : {},
       ]}
       onPress={() => onPress(device)}
       disabled={isDisabled}
     >
-      <View style={styles.deviceIcon}>
-        <MaterialIcons 
-          name={deviceName.toLowerCase().includes("watch") ? "watch" : "bluetooth"} 
-          size={24} 
-          color="#4582EC" 
-        />
-      </View>
       <View style={styles.deviceInfo}>
         <Text style={[styles.deviceName, { color: textColor }]}>
           {deviceName}
         </Text>
       </View>
       <View style={styles.deviceStatus}>
-        {isConnecting ? (
-          <ActivityIndicator size="small" color="#4582EC" />
-        ) : (
           <View style={styles.signalContainer}>
             {isPaired ? (
               <View style={styles.connectedStatus}>
-                <Text style={styles.connectedText}>Connected</Text>
-                <Ionicons name="checkmark-circle" size={16} color="#4CAF50" />
+                <Text style={[styles.connectedText, { color: successColor }]}>
+                  Connected
+                </Text>
+                <Ionicons name="checkmark-circle" size={16} color={successColor} />
               </View>
             ) : (
               <>
-                {renderSignalIcon(signalStrength)}
-                <Text style={styles.rssiValue}>
+              {isConnecting ? (
+              <ActivityIndicator size="small" color={tintColor} />
+              ) : (
+                <>
+                {renderSignalIcon(signalStrength, signalHighColor, signalMedColor, signalLowColor, textSecondary)}
+                {/* For testing bring this back if needed */}
+                {/* <Text style={[styles.rssiValue, { color: textSecondary }]}>
                   {device.rssi ? `${device.rssi} dBm` : 'N/A'}
-                </Text>
+                </Text> */}
+                </>
+                )}
               </>
             )}
           </View>
-        )}
       </View>
     </Pressable>
   );
@@ -85,16 +90,22 @@ const getSignalStrength = (rssi?: number | null): number => {
   return 0; // Very weak or unknown
 };
 
-const renderSignalIcon = (strength: number) => {
+const renderSignalIcon = (
+  strength: number,
+  highColor: string,
+  mediumColor: string,
+  lowColor: string,
+  defaultColor: string
+) => {
   switch (strength) {
     case 3:
-      return <Ionicons name="wifi" size={20} color="#4CAF50" />;
+      return <Ionicons name="wifi" size={20} color={highColor} />;
     case 2:
-      return <Ionicons name="wifi" size={20} color="#FF9800" />;
+      return <Ionicons name="wifi" size={20} color={mediumColor} />;
     case 1:
-      return <Ionicons name="wifi" size={20} color="#F44336" />;
+      return <Ionicons name="wifi" size={20} color={lowColor} />;
     default:
-      return <Ionicons name="wifi-outline" size={20} color="#9E9E9E" />;
+      return <Ionicons name="wifi-outline" size={20} color={defaultColor} />;
   }
 };
 
@@ -102,48 +113,16 @@ const styles = StyleSheet.create({
   deviceItem: {
     flexDirection: "row",
     alignItems: "center",
-    padding: 12,
-    borderRadius: 12,
-    marginVertical: 6,
-    backgroundColor: "rgba(255, 255, 255, 0.9)",
-    borderWidth: 1,
-    borderColor: "#F0F0F0",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 1,
-    elevation: 1,
-  },
-  deviceItemPressed: {
-    opacity: 0.8,
-    backgroundColor: "rgba(240, 240, 240, 0.9)",
-  },
-  pairedDeviceItem: {
-    backgroundColor: "rgba(236, 246, 253, 0.9)",
-    borderColor: "#D0E8F9",
-    borderLeftWidth: 3,
-    borderLeftColor: "#4582EC",
-  },
-  deviceIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: "rgba(69, 130, 236, 0.1)",
-    alignItems: "center",
-    justifyContent: "center",
-    marginRight: 12,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    borderBottomWidth: StyleSheet.hairlineWidth,
   },
   deviceInfo: {
     flex: 1,
   },
   deviceName: {
-    fontSize: 16,
-    fontWeight: "600",
-    marginBottom: 4,
-  },
-  deviceId: {
-    fontSize: 12,
-    color: "#9E9E9E",
+    fontSize: 17,
+    fontWeight: "400",
   },
   deviceStatus: {
     marginLeft: 8,
@@ -154,7 +133,6 @@ const styles = StyleSheet.create({
   },
   rssiValue: {
     fontSize: 10,
-    color: "#9E9E9E",
     marginTop: 2,
   },
   connectedStatus: {
@@ -163,11 +141,7 @@ const styles = StyleSheet.create({
   },
   connectedText: {
     fontSize: 12,
-    color: "#4CAF50",
     fontWeight: "500",
     marginRight: 4,
-  },
-  disconnectContainer: {
-    marginTop: 8,
   },
 });

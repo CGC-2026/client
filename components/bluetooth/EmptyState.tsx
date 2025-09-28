@@ -7,13 +7,18 @@ type EmptyStateProps = {
 };
 
 export default function EmptyState({ isScanning }: EmptyStateProps) {
+  // Get theme colors
   const textColor = useThemeColor({}, "text");
+  const textSecondary = useThemeColor({}, "textSecondary"); 
+  const textTertiary = useThemeColor({}, "textTertiary");
+  const tintColor = useThemeColor({}, "tint");
+  const iconColor = useThemeColor({}, "icon");
   
   if (isScanning) {
     return (
       <View style={styles.container}>
-        <ActivityIndicator size="large" color="#4582EC" />
-        <Text style={[styles.text, { color: textColor + "AA" }]}>
+        <ActivityIndicator size="large" color={tintColor} />
+        <Text style={[styles.text, { color: textSecondary }]}>
           Searching for devices...
         </Text>
       </View>
@@ -22,11 +27,11 @@ export default function EmptyState({ isScanning }: EmptyStateProps) {
   
   return (
     <View style={styles.container}>
-      <Ionicons name="bluetooth" size={50} color="#BBBBBB" />
-      <Text style={[styles.text, { color: textColor + "AA" }]}>
+      <Ionicons name="bluetooth" size={50} color={iconColor} />
+      <Text style={[styles.text, { color: textSecondary }]}>
         No devices found
       </Text>
-      <Text style={[styles.subtext, { color: textColor + "77" }]}>
+      <Text style={[styles.subtext, { color: textTertiary }]}>
         Make sure your device is turned on and in range
       </Text>
     </View>

@@ -4,8 +4,7 @@ import ScanButton from "@/components/bluetooth/ScanButton";
 import ScreenHeader from "@/components/bluetooth/ScreenHeader";
 import SectionHeader from "@/components/bluetooth/SectionHeader";
 import { useIOSBle } from "@/contexts/iOSBLE.Provider";
-import { useThemeColor } from "@/hooks/useThemeColor";
-import { styles } from "@/styles/bluetooth";
+import { createThemedStyles } from "@/styles/bluetooth";
 import { Alert, ScrollView, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -22,7 +21,8 @@ export default function BluetoothScreen() {
     connectingDeviceId
   } = useIOSBle();
   
-  const backgroundColor = useThemeColor({}, "background");
+  // Get theme-aware styles
+  const themedStyles = createThemedStyles();
 
   const handleDevicePress = (device: any) => {
     // If this is the paired device, show disconnect confirmation
@@ -50,24 +50,26 @@ export default function BluetoothScreen() {
     
   return (
     <SafeAreaView 
-      style={[styles.container, { backgroundColor }]}
+      style={themedStyles.container}
       edges={['top']}
     >
-      <View style={styles.contentContainer}>
-        <ScreenHeader 
-          title="Devices" 
-          subtitle="Connect to your device" 
-        />
-        <ScanButton 
-          isScanning={isScanning} 
-          onPress={isScanning ? stopScan : findDevices} 
-          disabled={isConnecting} 
-        />
+      <View style={themedStyles.contentContainer}>
+        <View style={themedStyles.headerContainer}>
+          <ScreenHeader 
+            title="Devices" 
+            subtitle="Connect to your device" 
+          />
+          <ScanButton 
+            isScanning={isScanning} 
+            onPress={isScanning ? stopScan : findDevices} 
+            disabled={isConnecting} 
+          />
+        </View>
         
-        <ScrollView contentContainerStyle={styles.scrollContent}>
+        <ScrollView contentContainerStyle={themedStyles.scrollContent}>
           {/* Connected Devices Section */}
           {pairedDevice && (
-            <View style={styles.section}>
+            <View style={themedStyles.section}>
               <SectionHeader title="Connected" />
               <DeviceItem
                 device={pairedDevice}
@@ -81,7 +83,7 @@ export default function BluetoothScreen() {
           
           {/* Available Devices Section */}
           {devices.length > 0 && (
-            <View style={styles.section}>
+            <View style={themedStyles.section}>
               <SectionHeader title="Available" />
               {devices.map((device) => (
                 // Skip if this is the paired device

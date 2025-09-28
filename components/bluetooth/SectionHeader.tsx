@@ -6,12 +6,13 @@ type SectionHeaderProps = {
 };
 
 export default function SectionHeader({ title }: SectionHeaderProps) {
-  const textColor = useThemeColor({}, "text");
+  const textSecondary = useThemeColor({}, "textSecondary");
+  const borderColor = useThemeColor({}, "border");
   
   return (
-    <View style={styles.container}>
-      <Text style={[styles.title, { color: textColor + "99" }]}>
-        {title}
+    <View style={[styles.container, { borderColor }]}>
+      <Text style={[styles.title, { color: textSecondary }]}>
+        {title.toUpperCase()}
       </Text>
     </View>
   );
@@ -19,13 +20,13 @@ export default function SectionHeader({ title }: SectionHeaderProps) {
 
 const styles = StyleSheet.create({
   container: {
-    paddingVertical: 8,
-    marginBottom: 4,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderBottomWidth: StyleSheet.hairlineWidth,
   },
   title: {
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: "600",
-    textTransform: "uppercase",
-    letterSpacing: 0.5,
+    letterSpacing: 0.3,
   },
 });

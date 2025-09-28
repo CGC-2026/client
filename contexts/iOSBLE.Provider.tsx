@@ -1,7 +1,7 @@
 import { ble } from "@/constants/BLE";
 import { ensurePoweredOn } from "@/helpers/BLE";
 import { useMachine } from "@xstate/react";
-import { createContext, useContext, useEffect, useState } from "react";
+import { createContext, useContext, useEffect, useMemo, useState } from "react";
 import { BleManager, Device } from "react-native-ble-plx";
 import { createMachine } from "xstate";
 import { BLEContextType } from "./BLE.Provider";
@@ -202,6 +202,23 @@ export const IOSBleProvider: React.FC<{ children: React.ReactNode }> = ({
     }
   };
 
+  // sorted and properly filtered devices by rssi
+  const sortedDevices = useMemo(() => {
+    return devices.sort((a, b) => {
+      return (b.rssi ?? 0) - (a.rssi ?? 0);
+    }).filter((device) => {
+      return device.rssi !== null;
+    })
+    // make sure the samee device is not in the list twice
+    .filter((device, index, self) =>
+      index === self.findIndex((t) => t.id === device.id)
+    )
+    // if we are paired, remove the paired device from the list
+    .filter((device) => {
+      return device.id !== pairedDevice?.id;
+    });
+  }, [devices]);
+
   return (
     <BleContext.Provider
       value={{
@@ -209,7 +226,7 @@ export const IOSBleProvider: React.FC<{ children: React.ReactNode }> = ({
         stopScan,
         pairDevice,
         disconnectDevice,
-        devices,
+        devices: sortedDevices,
         isScanning: state.matches('scanning'),
         pairedDevice,
         isConnecting,

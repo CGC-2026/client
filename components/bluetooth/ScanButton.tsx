@@ -1,3 +1,4 @@
+import { useThemeColor } from "@/hooks/useThemeColor";
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-native";
 
@@ -8,25 +9,34 @@ type ScanButtonProps = {
 };
 
 export default function ScanButton({ isScanning, onPress, disabled = false }: ScanButtonProps) {
+  // Get theme colors
+  const tintColor = useThemeColor({}, "tint");
+  const errorColor = useThemeColor({}, "error");
+  const textColor = useThemeColor({ light: "#FFFFFF", dark: "#FFFFFF" }, "text");
+  const shadowColor = useThemeColor({ light: "#000000", dark: "#000000" }, "text");
+
   return (
     <Pressable 
       style={({ pressed }) => [
         styles.scanButton, 
-        isScanning ? styles.scanningButton : (pressed ? styles.scanButtonPressed : {}),
-        { backgroundColor: isScanning ? "#ff6347" : "#4582EC" }
+        {
+          backgroundColor: isScanning ? errorColor : tintColor,
+          shadowColor,
+        },
+        pressed && { opacity: 0.8 }
       ]}
       onPress={onPress}
       disabled={disabled}
     >
       {isScanning ? (
         <View style={styles.scanningContent}>
-          <ActivityIndicator color="#FFFFFF" style={styles.spinner} />
-          <Text style={styles.scanButtonText}>Scanning...</Text>
+          <ActivityIndicator color={textColor} style={styles.spinner} />
+          <Text style={[styles.scanButtonText, { color: textColor }]}>Scanning...</Text>
         </View>
       ) : (
         <View style={styles.scanButtonContent}>
-          <Ionicons name="search" size={20} color="#FFFFFF" style={styles.scanIcon} />
-          <Text style={styles.scanButtonText}>Scan for Devices</Text>
+          <Ionicons name="search" size={20} color={textColor} style={styles.scanIcon} />
+          <Text style={[styles.scanButtonText, { color: textColor }]}>Scan for Devices</Text>
         </View>
       )}
     </Pressable>
@@ -35,25 +45,16 @@ export default function ScanButton({ isScanning, onPress, disabled = false }: Sc
 
 const styles = StyleSheet.create({
   scanButton: {
-    backgroundColor: "#4582EC",
     borderRadius: 12,
     padding: 14,
     alignItems: "center",
     marginVertical: 8,
     flexDirection: "row",
     justifyContent: "center",
-    shadowColor: "#000",
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.2,
     shadowRadius: 2,
     elevation: 2,
-  },
-  scanButtonPressed: {
-    opacity: 0.8,
-    backgroundColor: "#3A70C9",
-  },
-  scanningButton: {
-    backgroundColor: "#ff6347",
   },
   scanButtonContent: {
     flexDirection: "row",
@@ -70,7 +71,6 @@ const styles = StyleSheet.create({
     marginRight: 8,
   },
   scanButtonText: {
-    color: "#FFFFFF",
     fontSize: 16,
     fontWeight: "600",
   },
