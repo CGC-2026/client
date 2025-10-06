@@ -1,6 +1,6 @@
 import { Platform } from "react-native";
 import { Device } from "react-native-ble-plx";
-import { IOSBleProvider, useIOSBle } from "./iOSBLE.Provider";
+import { IOSBleProvider, useIOSBle } from "./BLE.iOS.Provider";
 
 // Public API shape for UI layer
 export type BLEContextType = {

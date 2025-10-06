@@ -1,15 +1,30 @@
 import { IconSymbol } from "@/components/ui/IconSymbol";
 import { useBLE } from "@/contexts/BLE.Provider";
+import { useMenu } from "@/contexts/Menu.Provider";
 import { useThemeColor } from "@/hooks/useThemeColor";
-import { useRouter } from "expo-router";
+import { useNavigation, useRouter } from "expo-router";
+import { useLayoutEffect } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+
+const menuActions = [
+  { id: 'profile', title: 'Profile', image: 'person.fill' },
+  { id: 'settings', title: 'Settings', image: 'gear' }
+];
 
 export default function HomeScreen() {
   const { pairedDevice } = useBLE();
   const router = useRouter();
+  const navigation = useNavigation();
   const textColor = useThemeColor({}, "text");
-
+  const { createContextMenu } = useMenu();
+  
+  const handleMenuAction = (id: string) => {
+    if (id === 'profile') {
+    } else if (id === 'settings') {
+    }
+  };
+  
   const handleDevicePress = () => {
     if (pairedDevice) {
       // If device is already connected, go directly to device info
@@ -19,35 +34,43 @@ export default function HomeScreen() {
       router.push('/bluetooth');
     }
   };
+  
+  // Configure the navigation header
+  useLayoutEffect(() => {
+    navigation.setOptions({
+      headerLeft: () => {
+        
+        return createContextMenu({
+          actions: menuActions,
+          onPressAction: handleMenuAction,
+          children: (
+            <View style={styles.headerButton}>
+              <IconSymbol
+                name="person.circle.fill"
+                color={textColor}
+                size={24}
+              />
+            </View>
+          )
+        });
+      },
+      headerRight: () => (
+        <Pressable 
+          style={styles.headerButton}
+          onPress={handleDevicePress}
+        >
+          <IconSymbol
+            name={pairedDevice ? "checkmark.circle.fill" : "circle"}
+            size={24}
+            color={pairedDevice ? "#4CAF50" : "#ccc"}
+          />
+        </Pressable>
+      ),
+    });
+  }, [navigation, pairedDevice, textColor]);
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* Top Navigation Bar */}
-      <View style={styles.topNavBar}>
-        <View style={styles.navContent}>
-          <View style={styles.navLeft}>
-            <Text style={[styles.navTitle, { color: textColor }]}>
-              Knee Sleeve
-            </Text>
-          </View>
-          <View style={styles.navRight}>
-            <Pressable
-              style={({ pressed }) => [
-                styles.navButton,
-                { opacity: pressed ? 0.7 : 1 }
-              ]}
-              onPress={handleDevicePress}
-            >
-              <IconSymbol
-                name={pairedDevice ? "checkmark.circle.fill" : "circle"}
-                size={24}
-                color={pairedDevice ? "#4CAF50" : "#ccc"}
-              />
-            </Pressable>
-          </View>
-        </View>
-      </View>
-
       <View style={styles.content}>
         <Text style={[styles.welcomeText, { color: textColor }]}>
           Welcome to Knee Sleeve
@@ -64,33 +87,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  topNavBar: {
-    backgroundColor: 'transparent',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#e0e0e0',
-  },
-  navContent: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  navLeft: {
-    flex: 1,
-  },
-  navTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-  },
-  navRight: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  navButton: {
-    padding: 8,
-    borderRadius: 20,
-  },
   content: {
     flex: 1,
     justifyContent: 'center',
@@ -106,6 +102,10 @@ const styles = StyleSheet.create({
   subtitle: {
     fontSize: 16,
     textAlign: 'center',
+  },
+  headerButton: {
+    padding: 8,
+    marginHorizontal: 8,
   },
 });
 
