@@ -8,8 +8,7 @@ type EmptyStateProps = {
 
 export default function EmptyState({ isScanning }: EmptyStateProps) {
   // Get theme colors
-  const textColor = useThemeColor({}, "text");
-  const textSecondary = useThemeColor({}, "textSecondary"); 
+  const textSecondary = useThemeColor({}, "textSecondary");
   const textTertiary = useThemeColor({}, "textTertiary");
   const tintColor = useThemeColor({}, "tint");
   const iconColor = useThemeColor({}, "icon");

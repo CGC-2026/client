@@ -21,7 +21,7 @@ const semantic = {
     dark: '#FFB240',
   },
   error: {
-    light: '#FF6347', // Tomato red
+    light: '#FF6347',
     dark: '#FF8A75',
   },
   info: {

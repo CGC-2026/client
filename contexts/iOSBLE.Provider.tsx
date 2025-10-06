@@ -160,9 +160,10 @@ export const IOSBleProvider: React.FC<{ children: React.ReactNode }> = ({
     if (pairedDevice) {
       try {
         await pairedDevice.cancelConnection();
-        setPairedDevice(null);
       } catch (e) {
         console.error('Error disconnecting from device:', e);
+      } finally {
+        setPairedDevice(null);
       }
     }
     
@@ -186,6 +187,7 @@ export const IOSBleProvider: React.FC<{ children: React.ReactNode }> = ({
   };
 
   const disconnectDevice = async (): Promise<boolean> => {
+    // we should check if we are connected to a device via the manager
     if (!pairedDevice) {
       return false;
     }

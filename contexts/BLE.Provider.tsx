@@ -55,10 +55,10 @@ export default function BLEProvider({ children }: { children: React.ReactNode })
     }
 }
 
-export const useBLE = (): BLEContextType | null => {
+export const useBLE = (): BLEContextType => {
     if (Platform.OS === 'ios') {
         return useIOSBle()
     } else {
-        return null
+        throw new Error('BLEProvider is not supported on this platform')
     }
 }
