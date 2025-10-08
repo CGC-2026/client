@@ -6,7 +6,7 @@
 
 // Primary brand colors
 const primary = {
-  light: '#4582EC', // Blue
+  light: '#4582EC',
   dark: '#5E96FF',
 };
 
@@ -39,13 +39,13 @@ export const Colors = {
     textTertiary: '#9EA3A8',
     
     // Background colors
-    background: '#F2F2F7', // iOS system background
+    background: '#F2F2F7', 
     card: '#FFFFFF',
     cardPressed: '#F8F8F8',
-    cardHighlighted: '#F6F9FC', // Very subtle blue tint
+    cardHighlighted: '#F6F9FC',
     
     // Border colors
-    border: '#E5E5EA', // iOS system separator
+    border: '#E5E5EA',
     divider: '#E5E5EA',
     
     // UI element colors
@@ -65,6 +65,7 @@ export const Colors = {
     signalStrengthHigh: semantic.success.light,
     signalStrengthMedium: semantic.warning.light,
     signalStrengthLow: semantic.error.light,
+    buttonText: '#FFFFFF',
   },
   
   dark: {
@@ -74,13 +75,13 @@ export const Colors = {
     textTertiary: '#747A80',
     
     // Background colors
-    background: '#1C1C1E', // iOS dark mode system background
-    card: '#2C2C2E', // iOS dark mode card background
+    background: '#1C1C1E',
+    card: '#2C2C2E',
     cardPressed: '#3A3A3C',
-    cardHighlighted: '#303844', // Subtle blue tint for dark mode
+    cardHighlighted: '#303844',
     
     // Border colors
-    border: '#38383A', // iOS dark mode separator
+    border: '#38383A',
     divider: '#38383A',
     
     // UI element colors
@@ -100,5 +101,6 @@ export const Colors = {
     signalStrengthHigh: semantic.success.dark,
     signalStrengthMedium: semantic.warning.dark,
     signalStrengthLow: semantic.error.dark,
+    buttonText: '#FFFFFF',
   },
 };

@@ -29,7 +29,7 @@ export default function BatteryIndicator({
   const batteryColor = getBatteryColor();
 
   return (
-    <View style={styles.container}>
+    <View>
       <View style={styles.batteryContainer}>
         {/* Battery Icon */}
         <Battery 
@@ -37,10 +37,9 @@ export default function BatteryIndicator({
           size={48}
           color={batteryColor}
           charging={isCharging}
-          style={styles.batteryIcon}
         />
         {/* Battery text */}
-        <View style={styles.batteryText}>
+        <View>
           <Text style={[styles.batteryLevel, { color: textColor }]}>
             {batteryLevel}%
           </Text>
@@ -51,26 +50,13 @@ export default function BatteryIndicator({
 }
 
 const styles = StyleSheet.create({
-  container: {
-    alignItems: 'center',
-    paddingVertical: 16,
-  },
   batteryContainer: {
     flexDirection: 'column',
     alignItems: 'center',
-  },
-  batteryIcon: {
-    marginRight: 12,
-  },
-  batteryText: {
-    alignItems: 'center',
+    justifyContent: 'center',
   },
   batteryLevel: {
     fontSize: 20,
-    fontWeight: '600',
-    marginBottom: 2,
-  },
-  label: {
-    fontSize: 14,
+    fontWeight: '500',
   },
 });

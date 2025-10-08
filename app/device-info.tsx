@@ -10,7 +10,6 @@ import { Alert, Pressable, ScrollView, StyleSheet } from "react-native";
 
 export default function DeviceInfoScreen() {
   const { pairedDevice, disconnectDevice, isConnecting } = useBLE();
-
   const router = useRouter();
   const errorColor = useThemeColor({}, "error");
 
@@ -64,17 +63,12 @@ export default function DeviceInfoScreen() {
         style={styles.scrollView}
         showsVerticalScrollIndicator={false}
       >
-        {/* Header with device icon and name */}
         <ThemedView style={styles.headerSection}>
-          <KneeIcon size={80} />
+          <KneeIcon size={75} />
         </ThemedView>
-
-        {/* About Section */}
-        <ThemedView style={styles.card}>
-          <BatteryIndicator batteryLevel={75} isCharging={true} />
+        <ThemedView>
+          <BatteryIndicator batteryLevel={80} isCharging={true} />
         </ThemedView>
-
-        {/* Disconnect Button */}
         <Pressable
           style={({ pressed }) => [
             styles.disconnectButton,
@@ -83,7 +77,7 @@ export default function DeviceInfoScreen() {
           onPress={handleDisconnect}
           disabled={isConnecting}
         >
-          <ThemedText style={styles.disconnectButtonText} lightColor="#FFFFFF" darkColor="#FFFFFF">
+          <ThemedText style={styles.disconnectButtonText} lightColor={useThemeColor({}, "buttonText")} darkColor={useThemeColor({}, "buttonText")}>
             {isConnecting ? 'Disconnecting...' : 'Disconnect Device'}
           </ThemedText>
         </Pressable>
@@ -101,13 +95,19 @@ const styles = StyleSheet.create({
   },
   headerSection: {
     marginTop: 30,
-    alignItems: 'center',
-  },
-  card: {
-    marginHorizontal: 16,
-    borderRadius: 10,
-    marginBottom: 20,
-    paddingVertical: 12,
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    backgroundColor: useThemeColor({}, "card"),
+    alignItems: "center",
+    justifyContent: "center",
+    alignSelf: 'center',
+    shadowColor: useThemeColor({}, "text"),
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.12,
+    shadowRadius: 6,
+    elevation: 3,
+    marginBottom: 8,
   },
   infoRow: {
     flexDirection: 'row',

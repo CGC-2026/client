@@ -16,7 +16,6 @@ export function IOSMenuProvider({ children }: { children: React.ReactNode }) {
         title={props.title || ''}
         actions={props.actions}
         onPressAction={({ nativeEvent }) => {
-          // nativeEvent contains event which is the action ID
           if (nativeEvent?.event) {
             props.onPressAction(nativeEvent.event);
           }

@@ -29,7 +29,7 @@ export default function BluetoothScreen() {
   const themedStyles = createThemedStyles();
 
   useEffect(() => {
-    // scan for devices on first render
+      // scan for devices on first render
       findDevices();
   }, []);
 
@@ -40,18 +40,10 @@ export default function BluetoothScreen() {
     }
     const success = await pairDevice(device);
     if (success) {
-      // Mock saving the device to storage/API
-      saveDeviceToStorage(device);
+      // TODO Saved paired device to storage if it is new
       // Go back to My Devices screen
       router.back();
     }
-  };
-  
-  // Mock function to save device to storage
-  const saveDeviceToStorage = (device: Device) => {
-    // In a real implementation, this would save to AsyncStorage or call an API
-    console.log(`Device saved: ${device.id} - ${device.name || 'Unnamed Device'}`);
-    // Note: The useBLE context is responsible for managing the pairedDevice state
   };
 
   return (

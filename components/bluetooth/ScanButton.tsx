@@ -12,10 +12,10 @@ export default function ScanButton({ isScanning, onPress, disabled = false }: Sc
   // Get theme colors
   const tintColor = useThemeColor({}, "tint");
   const errorColor = useThemeColor({}, "error");
-  const textColor = useThemeColor({ light: "#FFFFFF", dark: "#FFFFFF" }, "text");
-  const shadowColor = useThemeColor({ light: "#000000", dark: "#000000" }, "text");
+  const textColor = useThemeColor({}, "buttonText");
+  const shadowColor = useThemeColor({}, "text");
 
-  return (
+  return (  
     <Pressable 
       style={({ pressed }) => [
         styles.scanButton, 

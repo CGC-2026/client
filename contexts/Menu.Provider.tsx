@@ -2,13 +2,12 @@ import React from "react";
 import { Platform } from "react-native";
 import { IOSMenuProvider, useIOSMenu } from "./Menu.iOS.Provider";
 
-// Using types that match @react-native-menu/menu
 export type MenuAction = {
   id: string;
   title: string;
   titleColor?: string;
   subtitle?: string;
-  image?: string; // SF Symbol name for iOS or Android resource drawable
+  image?: string;
   imageColor?: string;
   attributes?: {
     destructive?: boolean;
