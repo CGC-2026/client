@@ -7,10 +7,12 @@ import { ThemedView } from "@/components/ThemedView";
 import { useBLE } from "@/contexts/BLE.Provider";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { Stack, useRouter } from "expo-router";
-import { Alert, ScrollView, StyleSheet, View } from "react-native";
+import { useEffect, useRef } from "react";
+import { ScrollView, StyleSheet, View } from "react-native";
 import { Device } from "react-native-ble-plx";
 
 export default function BluetoothScreen() {
+   const firstRender = useRef(true);
   const {
     findDevices,
     stopScan,
@@ -24,47 +26,32 @@ export default function BluetoothScreen() {
   } = useBLE();
 
   const router = useRouter();
-
-  // Get theme-aware styles
   const themedStyles = createThemedStyles();
 
+  useEffect(() => {
+    // scan for devices on first render
+      findDevices();
+  }, []);
+
   const handleDevicePress = async (device: Device) => {
-    // If this is the paired device, show disconnect confirmation
-    if (pairedDevice && pairedDevice.id === device.id) {
-      router.push('/device-info');
-    } else if (pairedDevice && pairedDevice.id !== device.id) {
-      // ask the user if they want to disconnect from the current device
-      Alert.alert(
-        "Disconnect Device",
-        `Do you want to disconnect from ${pairedDevice.name || 'Unnamed Device'} and connect to ${device.name || 'Unnamed Device'} instead?`,
-        [
-          {
-            text: "Cancel",
-            style: "cancel"
-          },
-          {
-            text: "Disconnect",
-            style: "destructive",
-            onPress: async () => {
-              await disconnectDevice();
-              const success = await pairDevice(device);
-              if (success) {
-                router.push('/device-info');
-              }
-            }
-          }
-        ]
-      );
+    if (isConnecting) {
+      // disconnect the device
+      await disconnectDevice();
     }
-    
-    else {
-      // Otherwise try to pair
-      const success = await pairDevice(device);
-      if (success) {
-        // Navigate to device info screen after successful pairing
-        router.push('/device-info');
-      }
+    const success = await pairDevice(device);
+    if (success) {
+      // Mock saving the device to storage/API
+      saveDeviceToStorage(device);
+      // Go back to My Devices screen
+      router.back();
     }
+  };
+  
+  // Mock function to save device to storage
+  const saveDeviceToStorage = (device: Device) => {
+    // In a real implementation, this would save to AsyncStorage or call an API
+    console.log(`Device saved: ${device.id} - ${device.name || 'Unnamed Device'}`);
+    // Note: The useBLE context is responsible for managing the pairedDevice state
   };
 
   return (
@@ -74,7 +61,7 @@ export default function BluetoothScreen() {
       <Stack.Screen
         options={{
           title: "",
-          headerBackTitle: "Home",
+          headerBackTitle: "My Devices",
           headerStyle: {
             backgroundColor: useThemeColor({}, "background"),
           },
@@ -95,20 +82,6 @@ export default function BluetoothScreen() {
         </View>
         
         <ScrollView contentContainerStyle={themedStyles.scrollContent}>
-          {/* Connected Devices Section */}
-          {pairedDevice && (
-            <View style={themedStyles.section}>
-              <SectionHeader title="Connected" />
-              <DeviceItem
-                device={pairedDevice}
-                onPress={handleDevicePress}
-                isConnecting={false}
-                isDisabled={false}
-                isPaired={true}
-              />
-            </View>
-          )}
-          
           {/* Available Devices Section */}
           {devices.length > 0 && (
             <View style={themedStyles.section}>

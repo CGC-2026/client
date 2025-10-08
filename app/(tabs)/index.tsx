@@ -26,13 +26,7 @@ export default function HomeScreen() {
   };
   
   const handleDevicePress = () => {
-    if (pairedDevice) {
-      // If device is already connected, go directly to device info
-      router.push('/device-info');
-    } else {
-      // If no device connected, go to bluetooth screen to connect
-      router.push('/bluetooth');
-    }
+    router.push('/my-devices');
   };
   
   // Configure the navigation header

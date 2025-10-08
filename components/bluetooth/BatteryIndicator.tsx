@@ -1,8 +1,9 @@
 import { Colors } from "@/constants/Colors";
 import { useColorScheme } from "@/hooks/useColorScheme";
 import { useThemeColor } from "@/hooks/useThemeColor";
+import { Battery } from '@brightlayer-ui/react-native-progress-icons';
 import { StyleSheet, Text, View } from "react-native";
-import Svg, { Path, Rect } from "react-native-svg";
+
 
 interface BatteryIndicatorProps {
   batteryLevel: number; // 0-100
@@ -31,48 +32,13 @@ export default function BatteryIndicator({
     <View style={styles.container}>
       <View style={styles.batteryContainer}>
         {/* Battery Icon */}
-        <Svg width={40} height={24} viewBox="0 0 40 24" style={styles.batteryIcon}>
-          {/* Battery outline */}
-          <Rect
-            x="2"
-            y="6"
-            width="32"
-            height="12"
-            rx="2"
-            stroke={batteryColor}
-            strokeWidth="2"
-            fill="none"
-          />
-
-          {/* Battery positive terminal */}
-          <Rect
-            x="34"
-            y="8"
-            width="2"
-            height="8"
-            fill={batteryColor}
-          />
-
-          {/* Battery level fill */}
-          <Rect
-            x="4"
-            y="8"
-            width={Math.max(0, (batteryLevel / 100) * 28)}
-            height="8"
-            fill={batteryColor}
-          />
-
-          {/* Lightning bolt when charging */}
-          {isCharging && (
-            <Path
-              d="M20 8 L16 12 L18 12 L14 18 L18 16 L16 16 L20 12 Z"
-              fill={"#FFFFFF"}
-              stroke={"#FFFFFF"}
-              strokeWidth="0.5"
-            />
-          )}
-        </Svg>
-
+        <Battery 
+          percent={batteryLevel}
+          size={48}
+          color={batteryColor}
+          charging={isCharging}
+          style={styles.batteryIcon}
+        />
         {/* Battery text */}
         <View style={styles.batteryText}>
           <Text style={[styles.batteryLevel, { color: textColor }]}>
@@ -90,14 +56,14 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
   },
   batteryContainer: {
-    flexDirection: 'row',
+    flexDirection: 'column',
     alignItems: 'center',
   },
   batteryIcon: {
     marginRight: 12,
   },
   batteryText: {
-    alignItems: 'flex-start',
+    alignItems: 'center',
   },
   batteryLevel: {
     fontSize: 20,

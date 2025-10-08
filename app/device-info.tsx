@@ -17,7 +17,7 @@ export default function DeviceInfoScreen() {
   // Redirect if no paired device
   useEffect(() => {
     if (!pairedDevice) {
-      router.back();
+      router.push('/my-devices');
     }
   }, [pairedDevice, router]);
 
@@ -36,7 +36,7 @@ export default function DeviceInfoScreen() {
           onPress: async () => {
             const success = await disconnectDevice();
             if (success) {
-              router.back();
+              router.push('/my-devices');
             }
           }
         }
@@ -53,7 +53,7 @@ export default function DeviceInfoScreen() {
       <Stack.Screen
         options={{
           title: pairedDevice.name || "Bluetooth Device",
-          headerBackTitle: "Home",
+          headerBackTitle: "My Devices",
           headerStyle: {
             backgroundColor: useThemeColor({}, "background"),
           },

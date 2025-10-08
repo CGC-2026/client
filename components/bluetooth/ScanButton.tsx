@@ -36,7 +36,7 @@ export default function ScanButton({ isScanning, onPress, disabled = false }: Sc
       ) : (
         <View style={styles.scanButtonContent}>
           <Ionicons name="search" size={20} color={textColor} style={styles.scanIcon} />
-          <Text style={[styles.scanButtonText, { color: textColor }]}>Scan for Devices</Text>
+          <Text style={[styles.scanButtonText, { color: textColor }]}>Refresh Scan</Text>
         </View>
       )}
     </Pressable>
