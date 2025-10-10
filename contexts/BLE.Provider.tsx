@@ -1,6 +1,6 @@
 import { Platform } from "react-native";
 import { Device } from "react-native-ble-plx";
-import { IOSBleProvider, useIOSBle } from "./iOSBLE.Provider";
+import { IOSBleProvider, useIOSBle } from "./BLE.iOS.Provider";
 
 // Public API shape for UI layer
 export type BLEContextType = {
@@ -55,10 +55,10 @@ export default function BLEProvider({ children }: { children: React.ReactNode })
     }
 }
 
-export const useBLE = (): BLEContextType | null => {
+export const useBLE = (): BLEContextType => {
     if (Platform.OS === 'ios') {
         return useIOSBle()
     } else {
-        return null
+        throw new Error('BLEProvider is not supported on this platform')
     }
 }

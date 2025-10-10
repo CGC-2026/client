@@ -1,16 +1,16 @@
 {
   "expo": {
-    "name": "client",
-    "slug": "client",
+    "name": "CGC",
+    "slug": "CGC",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "client",
+    "scheme": "CGC",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.aarshshah.client"
+      "bundleIdentifier": "com.aarshshah.CGC"
     },
     "android": {
       "adaptiveIcon": {
@@ -18,7 +18,7 @@
         "backgroundColor": "#ffffff"
       },
       "edgeToEdgeEnabled": true,
-      "package": "com.aarshshah.client"
+      "package": "com.aarshshah.CGC"
     },
     "web": {
       "bundler": "metro",

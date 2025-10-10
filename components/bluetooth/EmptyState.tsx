@@ -4,12 +4,17 @@ import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
 
 type EmptyStateProps = {
   isScanning: boolean;
+  message?: string;
+  subMessage?: string;
 };
 
-export default function EmptyState({ isScanning }: EmptyStateProps) {
+export default function EmptyState({ 
+  isScanning, 
+  message = "No devices found", 
+  subMessage = "Make sure your device is turned on and in range" 
+}: EmptyStateProps) {
   // Get theme colors
-  const textColor = useThemeColor({}, "text");
-  const textSecondary = useThemeColor({}, "textSecondary"); 
+  const textSecondary = useThemeColor({}, "textSecondary");
   const textTertiary = useThemeColor({}, "textTertiary");
   const tintColor = useThemeColor({}, "tint");
   const iconColor = useThemeColor({}, "icon");
@@ -29,10 +34,10 @@ export default function EmptyState({ isScanning }: EmptyStateProps) {
     <View style={styles.container}>
       <Ionicons name="bluetooth" size={50} color={iconColor} />
       <Text style={[styles.text, { color: textSecondary }]}>
-        No devices found
+        {message}
       </Text>
       <Text style={[styles.subtext, { color: textTertiary }]}>
-        Make sure your device is turned on and in range
+        {subMessage}
       </Text>
     </View>
   );
