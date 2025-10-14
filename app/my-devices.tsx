@@ -6,7 +6,13 @@ import { useBLE } from "@/contexts/BLE.Provider";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { Stack, useRouter } from "expo-router";
 import { useEffect, useState } from "react";
-import { Pressable, SafeAreaView, ScrollView, StyleSheet, View } from "react-native";
+import {
+  Pressable,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  View,
+} from "react-native";
 import { Device } from "react-native-ble-plx";
 
 // Type for saved devices
@@ -22,7 +28,7 @@ export default function MyDevicesScreen() {
   const themedStyles = createThemedStyles();
   const buttonColor = useThemeColor({}, "tint");
   const buttonTextColor = useThemeColor({}, "background");
-  
+
   // Mock saved devices - would come from AsyncStorage or API in production
   const [savedDevices, setSavedDevices] = useState<SavedDevice[]>([]);
 
@@ -30,14 +36,17 @@ export default function MyDevicesScreen() {
   useEffect(() => {
     // Mock implementation - this would be replaced with actual AsyncStorage/API call
     // For now, we just check if there's a paired device and add it to saved devices if needed
-    if (pairedDevice && !savedDevices.some(device => device.id === pairedDevice.id)) {
-      setSavedDevices(prevDevices => [
+    if (
+      pairedDevice &&
+      !savedDevices.some((device) => device.id === pairedDevice.id)
+    ) {
+      setSavedDevices((prevDevices) => [
         ...prevDevices,
         {
           id: pairedDevice.id,
-          name: pairedDevice.name || 'Unnamed Device',
-          lastConnected: new Date()
-        }
+          name: pairedDevice.name || "Unnamed Device",
+          lastConnected: new Date(),
+        },
       ]);
     }
   }, [pairedDevice]);
@@ -45,16 +54,16 @@ export default function MyDevicesScreen() {
   const handleDevicePress = (deviceId: string) => {
     // If this is the currently connected device, navigate to device info
     if (pairedDevice && pairedDevice.id === deviceId) {
-      router.push('/device-info');
+      router.push("/device-info");
     } else {
       // In the future, this would attempt to reconnect to the saved device
       // For now, just navigate to the bluetooth screen
-      router.push('/bluetooth');
+      router.push("/bluetooth");
     }
   };
 
   const handleAddDevice = () => {
-    router.push('/bluetooth');
+    router.push("/bluetooth");
   };
 
   return (
@@ -76,8 +85,8 @@ export default function MyDevicesScreen() {
             subtitle="Manage your paired devices"
           />
         </View>
-        
-        <ScrollView 
+
+        <ScrollView
           contentContainerStyle={themedStyles.scrollContent}
           showsVerticalScrollIndicator={false}
         >
@@ -86,7 +95,7 @@ export default function MyDevicesScreen() {
             <View style={themedStyles.section}>
               {savedDevices.map((device) => {
                 const isConnected = pairedDevice?.id === device.id;
-                
+
                 // Create a mock device object compatible with DeviceItem component
                 // Using type assertion with unknown to bypass TypeScript's type checking
                 // In a real implementation, we would fetch the actual Device object from BLE
@@ -103,9 +112,9 @@ export default function MyDevicesScreen() {
                   mtu: 20,
                   solicitedServiceUUIDs: [],
                   overflowServiceUUIDs: [],
-                  isConnectable: true
+                  isConnectable: true,
                 } as unknown as Device;
-                
+
                 return (
                   <DeviceItem
                     key={device.id}
@@ -119,14 +128,14 @@ export default function MyDevicesScreen() {
               })}
             </View>
           ) : (
-            <EmptyState 
+            <EmptyState
               isScanning={false}
               message="No devices paired yet"
               subMessage="Add a device to get started"
             />
           )}
         </ScrollView>
-        
+
         {/* Add Device Button */}
         <View style={themedStyles.buttonContainer}>
           <Pressable
@@ -135,13 +144,13 @@ export default function MyDevicesScreen() {
               {
                 backgroundColor: buttonColor,
                 opacity: pressed ? 0.9 : 1,
-              }
+              },
             ]}
             onPress={handleAddDevice}
           >
-            <ThemedText 
+            <ThemedText
               style={themedStyles.addButtonText}
-              lightColor={buttonTextColor} 
+              lightColor={buttonTextColor}
               darkColor={buttonTextColor}
             >
               Add Device
@@ -153,12 +162,13 @@ export default function MyDevicesScreen() {
   );
 }
 
-// A function that creates styles with theme-aware colors
 export const createThemedStyles = () => {
   const backgroundColor = useThemeColor({}, "background");
   const cardColor = useThemeColor({}, "card");
-  const borderColor = useThemeColor({}, "border");
-  const shadowColor = useThemeColor({ light: "#000000", dark: "#000000" }, "text");
+  const shadowColor = useThemeColor(
+    { light: "#000000", dark: "#000000" },
+    "text",
+  );
 
   return StyleSheet.create({
     container: {
@@ -190,7 +200,7 @@ export const createThemedStyles = () => {
       elevation: 1,
     },
     buttonContainer: {
-      position: 'absolute',
+      position: "absolute",
       bottom: 0,
       left: 0,
       right: 0,
@@ -200,11 +210,11 @@ export const createThemedStyles = () => {
     addButton: {
       borderRadius: 10,
       paddingVertical: 16,
-      alignItems: 'center',
+      alignItems: "center",
     },
     addButtonText: {
       fontSize: 17,
-      fontWeight: '600',
+      fontWeight: "600",
     },
   });
 };

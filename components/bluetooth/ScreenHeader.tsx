@@ -9,12 +9,10 @@ type ScreenHeaderProps = {
 export default function ScreenHeader({ title, subtitle }: ScreenHeaderProps) {
   const textColor = useThemeColor({}, "text");
   const textSecondary = useThemeColor({}, "textSecondary");
-  
+
   return (
     <View style={styles.header}>
-      <Text style={[styles.title, { color: textColor }]}>
-        {title}
-      </Text>
+      <Text style={[styles.title, { color: textColor }]}>{title}</Text>
       <Text style={[styles.subtitle, { color: textSecondary }]}>
         {subtitle}
       </Text>

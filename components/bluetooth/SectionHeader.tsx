@@ -8,7 +8,7 @@ type SectionHeaderProps = {
 export default function SectionHeader({ title }: SectionHeaderProps) {
   const textSecondary = useThemeColor({}, "textSecondary");
   const borderColor = useThemeColor({}, "border");
-  
+
   return (
     <View style={[styles.container, { borderColor }]}>
       <Text style={[styles.title, { color: textSecondary }]}>

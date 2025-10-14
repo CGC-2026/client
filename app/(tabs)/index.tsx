@@ -2,14 +2,16 @@ import { IconSymbol } from "@/components/ui/IconSymbol";
 import { useBLE } from "@/contexts/BLE.Provider";
 import { useMenu } from "@/contexts/Menu.Provider";
 import { useThemeColor } from "@/hooks/useThemeColor";
+import { useAuth } from "@/contexts/Auth.Provider";
 import { useNavigation, useRouter } from "expo-router";
 import { useLayoutEffect } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 const menuActions = [
-  { id: 'profile', title: 'Profile', image: 'person.fill' },
-  { id: 'settings', title: 'Settings', image: 'gear' }
+  { id: "profile", title: "Profile", image: "person.fill" },
+  { id: "settings", title: "Settings", image: "gear" },
+  { id: "signOut", title: "Sign Out", image: "eject" },
 ];
 
 export default function HomeScreen() {
@@ -18,22 +20,24 @@ export default function HomeScreen() {
   const navigation = useNavigation();
   const textColor = useThemeColor({}, "text");
   const { createContextMenu } = useMenu();
-  
-  const handleMenuAction = (id: string) => {
-    if (id === 'profile') {
-    } else if (id === 'settings') {
+  const { signOut } = useAuth();
+  const handleMenuAction = async (id: string) => {
+    if (id === "profile") {
+    } else if (id === "settings") {
+    } else if (id === "signOut") {
+      await signOut();
+      router.replace("/sign-in");
     }
   };
-  
+
   const handleDevicePress = () => {
-    router.push('/my-devices');
+    router.push("/my-devices");
   };
-  
+
   // Configure the navigation header
   useLayoutEffect(() => {
     navigation.setOptions({
       headerLeft: () => {
-        
         return createContextMenu({
           actions: menuActions,
           onPressAction: handleMenuAction,
@@ -45,14 +49,11 @@ export default function HomeScreen() {
                 size={24}
               />
             </View>
-          )
+          ),
         });
       },
       headerRight: () => (
-        <Pressable 
-          style={styles.headerButton}
-          onPress={handleDevicePress}
-        >
+        <Pressable style={styles.headerButton} onPress={handleDevicePress}>
           <IconSymbol
             name={pairedDevice ? "checkmark.circle.fill" : "circle"}
             size={24}
@@ -70,7 +71,9 @@ export default function HomeScreen() {
           Welcome to Knee Sleeve
         </Text>
         <Text style={[styles.subtitle, { color: textColor, opacity: 0.7 }]}>
-          {pairedDevice ? 'Device connected' : 'Tap the icon to connect your device'}
+          {pairedDevice
+            ? "Device connected"
+            : "Tap the icon to connect your device"}
         </Text>
       </View>
     </SafeAreaView>
@@ -83,24 +86,22 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     paddingHorizontal: 20,
   },
   welcomeText: {
     fontSize: 24,
-    fontWeight: '600',
+    fontWeight: "600",
     marginBottom: 8,
-    textAlign: 'center',
+    textAlign: "center",
   },
   subtitle: {
     fontSize: 16,
-    textAlign: 'center',
+    textAlign: "center",
   },
   headerButton: {
     padding: 8,
     marginHorizontal: 8,
   },
 });
-
-

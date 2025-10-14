@@ -1,4 +1,4 @@
 export const ble = {
-    lastDeviceId: "ble.lastDeviceId",
-    deviceScanTimeout: 10000
-}
+  lastDeviceId: "ble.lastDeviceId",
+  deviceScanTimeout: 10000,
+};
