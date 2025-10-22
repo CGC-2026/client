@@ -12,7 +12,7 @@ import { ScrollView, StyleSheet, View } from "react-native";
 import { Device } from "react-native-ble-plx";
 
 export default function BluetoothScreen() {
-   const firstRender = useRef(true);
+  const firstRender = useRef(true);
   const {
     findDevices,
     stopScan,
@@ -22,15 +22,15 @@ export default function BluetoothScreen() {
     pairedDevice,
     isScanning,
     isConnecting,
-    connectingDeviceId
+    connectingDeviceId,
   } = useBLE();
 
   const router = useRouter();
   const themedStyles = createThemedStyles();
 
   useEffect(() => {
-      // scan for devices on first render
-      findDevices();
+    // scan for devices on first render
+    findDevices();
   }, []);
 
   const handleDevicePress = async (device: Device) => {
@@ -47,9 +47,7 @@ export default function BluetoothScreen() {
   };
 
   return (
-    <ThemedView
-      style={themedStyles.container}
-    >
+    <ThemedView style={themedStyles.container}>
       <Stack.Screen
         options={{
           title: "",
@@ -62,37 +60,36 @@ export default function BluetoothScreen() {
       />
       <View style={themedStyles.contentContainer}>
         <View style={themedStyles.headerContainer}>
-          <ScreenHeader
-            title="Devices"
-            subtitle="Connect to your device"
-          />
+          <ScreenHeader title="Devices" subtitle="Connect to your device" />
           <ScanButton
             isScanning={isScanning}
             onPress={isScanning ? stopScan : findDevices}
             disabled={isConnecting}
           />
         </View>
-        
+
         <ScrollView contentContainerStyle={themedStyles.scrollContent}>
           {/* Available Devices Section */}
           {devices.length > 0 && (
             <View style={themedStyles.section}>
               <SectionHeader title="Available" />
-              {devices.map((device) => (
+              {devices.map((device) =>
                 // Skip if this is the paired device
                 pairedDevice?.id === device.id ? null : (
                   <DeviceItem
                     key={device.id}
                     device={device}
                     onPress={handleDevicePress}
-                    isConnecting={connectingDeviceId === device.id && isConnecting}
+                    isConnecting={
+                      connectingDeviceId === device.id && isConnecting
+                    }
                     isDisabled={isConnecting}
                   />
-                )
-              ))}
+                ),
+              )}
             </View>
           )}
-          
+
           {/* Empty State */}
           {devices.length === 0 && !pairedDevice && (
             <EmptyState isScanning={isScanning} />
@@ -103,14 +100,15 @@ export default function BluetoothScreen() {
   );
 }
 
-
-
 // A function that creates styles with theme-aware colors
 export const createThemedStyles = () => {
   const backgroundColor = useThemeColor({}, "background");
   const cardColor = useThemeColor({}, "card");
   const borderColor = useThemeColor({}, "border");
-  const shadowColor = useThemeColor({ light: "#000000", dark: "#000000" }, "text");
+  const shadowColor = useThemeColor(
+    { light: "#000000", dark: "#000000" },
+    "text",
+  );
 
   return StyleSheet.create({
     container: {

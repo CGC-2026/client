@@ -1,6 +1,12 @@
 import { useThemeColor } from "@/hooks/useThemeColor";
-import Ionicons from '@expo/vector-icons/Ionicons';
-import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-native";
+import Ionicons from "@expo/vector-icons/Ionicons";
+import {
+  ActivityIndicator,
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
 
 type ScanButtonProps = {
   isScanning: boolean;
@@ -8,22 +14,26 @@ type ScanButtonProps = {
   disabled?: boolean;
 };
 
-export default function ScanButton({ isScanning, onPress, disabled = false }: ScanButtonProps) {
+export default function ScanButton({
+  isScanning,
+  onPress,
+  disabled = false,
+}: ScanButtonProps) {
   // Get theme colors
   const tintColor = useThemeColor({}, "tint");
   const errorColor = useThemeColor({}, "error");
   const textColor = useThemeColor({}, "buttonText");
   const shadowColor = useThemeColor({}, "text");
 
-  return (  
-    <Pressable 
+  return (
+    <Pressable
       style={({ pressed }) => [
-        styles.scanButton, 
+        styles.scanButton,
         {
           backgroundColor: isScanning ? errorColor : tintColor,
           shadowColor,
         },
-        pressed && { opacity: 0.8 }
+        pressed && { opacity: 0.8 },
       ]}
       onPress={onPress}
       disabled={disabled}
@@ -31,12 +41,21 @@ export default function ScanButton({ isScanning, onPress, disabled = false }: Sc
       {isScanning ? (
         <View style={styles.scanningContent}>
           <ActivityIndicator color={textColor} style={styles.spinner} />
-          <Text style={[styles.scanButtonText, { color: textColor }]}>Scanning...</Text>
+          <Text style={[styles.scanButtonText, { color: textColor }]}>
+            Scanning...
+          </Text>
         </View>
       ) : (
         <View style={styles.scanButtonContent}>
-          <Ionicons name="search" size={20} color={textColor} style={styles.scanIcon} />
-          <Text style={[styles.scanButtonText, { color: textColor }]}>Refresh Scan</Text>
+          <Ionicons
+            name="search"
+            size={20}
+            color={textColor}
+            style={styles.scanIcon}
+          />
+          <Text style={[styles.scanButtonText, { color: textColor }]}>
+            Refresh Scan
+          </Text>
         </View>
       )}
     </Pressable>

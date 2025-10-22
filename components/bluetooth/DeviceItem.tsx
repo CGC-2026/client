@@ -1,6 +1,12 @@
 import { useThemeColor } from "@/hooks/useThemeColor";
-import Ionicons from '@expo/vector-icons/Ionicons';
-import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-native";
+import Ionicons from "@expo/vector-icons/Ionicons";
+import {
+  ActivityIndicator,
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
 import { Device } from "react-native-ble-plx";
 
 type DeviceItemProps = {
@@ -11,12 +17,12 @@ type DeviceItemProps = {
   isPaired?: boolean;
 };
 
-export default function DeviceItem({ 
-  device, 
-  onPress, 
-  isConnecting, 
+export default function DeviceItem({
+  device,
+  onPress,
+  isConnecting,
   isDisabled,
-  isPaired = false
+  isPaired = false,
 }: DeviceItemProps) {
   // Get theme colors
   const textColor = useThemeColor({}, "text");
@@ -30,7 +36,7 @@ export default function DeviceItem({
   const signalHighColor = useThemeColor({}, "signalStrengthHigh");
   const signalMedColor = useThemeColor({}, "signalStrengthMedium");
   const signalLowColor = useThemeColor({}, "signalStrengthLow");
-  
+
   const deviceName = device.name || "Unnamed Device";
   const signalStrength = getSignalStrength(device.rssi);
 
@@ -51,30 +57,40 @@ export default function DeviceItem({
         </Text>
       </View>
       <View style={styles.deviceStatus}>
-          <View style={styles.signalContainer}>
-            {isPaired ? (
-              <View style={styles.connectedStatus}>
-                <Text style={[styles.connectedText, { color: successColor }]}>
-                  Connected
-                </Text>
-                <Ionicons name="checkmark-circle" size={16} color={successColor} />
-              </View>
-            ) : (
-              <>
+        <View style={styles.signalContainer}>
+          {isPaired ? (
+            <View style={styles.connectedStatus}>
+              <Text style={[styles.connectedText, { color: successColor }]}>
+                Connected
+              </Text>
+              <Ionicons
+                name="checkmark-circle"
+                size={16}
+                color={successColor}
+              />
+            </View>
+          ) : (
+            <>
               {isConnecting ? (
-              <ActivityIndicator size="small" color={tintColor} />
+                <ActivityIndicator size="small" color={tintColor} />
               ) : (
                 <>
-                {renderSignalIcon(signalStrength, signalHighColor, signalMedColor, signalLowColor, textSecondary)}
-                {/* For testing bring this back if needed */}
-                {/* <Text style={[styles.rssiValue, { color: textSecondary }]}>
+                  {renderSignalIcon(
+                    signalStrength,
+                    signalHighColor,
+                    signalMedColor,
+                    signalLowColor,
+                    textSecondary,
+                  )}
+                  {/* For testing bring this back if needed */}
+                  {/* <Text style={[styles.rssiValue, { color: textSecondary }]}>
                   {device.rssi ? `${device.rssi} dBm` : 'N/A'}
                 </Text> */}
                 </>
-                )}
-              </>
-            )}
-          </View>
+              )}
+            </>
+          )}
+        </View>
       </View>
     </Pressable>
   );
@@ -95,7 +111,7 @@ const renderSignalIcon = (
   highColor: string,
   mediumColor: string,
   lowColor: string,
-  defaultColor: string
+  defaultColor: string,
 ) => {
   switch (strength) {
     case 3:

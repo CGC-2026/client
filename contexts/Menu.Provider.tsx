@@ -14,7 +14,7 @@ export type MenuAction = {
     disabled?: boolean;
     hidden?: boolean;
   };
-  state?: 'off' | 'on' | 'mixed';
+  state?: "off" | "on" | "mixed";
   subactions?: MenuAction[];
 };
 
@@ -26,18 +26,20 @@ export type MenuContextType = {
    * @param onPressAction Callback when menu item is selected
    * @returns JSX element with the menu
    */
-  createContextMenu: (
-    props: {
-      title?: string;
-      actions: MenuAction[];
-      onPressAction: (id: string) => void;
-      children: React.ReactNode;
-    }
-  ) => React.ReactElement;
+  createContextMenu: (props: {
+    title?: string;
+    actions: MenuAction[];
+    onPressAction: (id: string) => void;
+    children: React.ReactNode;
+  }) => React.ReactElement;
 };
 
-export default function MenuProvider({ children }: { children: React.ReactNode }) {
-  if (Platform.OS === 'ios') {
+export default function MenuProvider({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  if (Platform.OS === "ios") {
     return <IOSMenuProvider>{children}</IOSMenuProvider>;
   } else {
     return <>{children}</>;
@@ -45,9 +47,9 @@ export default function MenuProvider({ children }: { children: React.ReactNode }
 }
 
 export const useMenu = (): MenuContextType => {
-  if (Platform.OS === 'ios') {
+  if (Platform.OS === "ios") {
     return useIOSMenu();
   } else {
-    throw new Error('MenuProvider is not supported on this platform');
+    throw new Error("MenuProvider is not supported on this platform");
   }
 };

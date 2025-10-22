@@ -16,18 +16,18 @@ export default function DeviceInfoScreen() {
   // Redirect if no paired device
   useEffect(() => {
     if (!pairedDevice) {
-      router.push('/my-devices');
+      router.push("/my-devices");
     }
   }, [pairedDevice, router]);
 
   const handleDisconnect = () => {
     Alert.alert(
       "Disconnect Device",
-      `Do you want to disconnect from "${pairedDevice?.name || 'Unnamed Device'}"?`,
+      `Do you want to disconnect from "${pairedDevice?.name || "Unnamed Device"}"?`,
       [
         {
           text: "Cancel",
-          style: "cancel"
+          style: "cancel",
         },
         {
           text: "Disconnect",
@@ -35,11 +35,11 @@ export default function DeviceInfoScreen() {
           onPress: async () => {
             const success = await disconnectDevice();
             if (success) {
-              router.push('/my-devices');
+              router.push("/my-devices");
             }
-          }
-        }
-      ]
+          },
+        },
+      ],
     );
   };
 
@@ -59,7 +59,7 @@ export default function DeviceInfoScreen() {
           headerShadowVisible: false,
         }}
       />
-      <ScrollView 
+      <ScrollView
         style={styles.scrollView}
         showsVerticalScrollIndicator={false}
       >
@@ -72,13 +72,17 @@ export default function DeviceInfoScreen() {
         <Pressable
           style={({ pressed }) => [
             styles.disconnectButton,
-            { backgroundColor: pressed ? errorColor : errorColor }
+            { backgroundColor: pressed ? errorColor : errorColor },
           ]}
           onPress={handleDisconnect}
           disabled={isConnecting}
         >
-          <ThemedText style={styles.disconnectButtonText} lightColor={useThemeColor({}, "buttonText")} darkColor={useThemeColor({}, "buttonText")}>
-            {isConnecting ? 'Disconnecting...' : 'Disconnect Device'}
+          <ThemedText
+            style={styles.disconnectButtonText}
+            lightColor={useThemeColor({}, "buttonText")}
+            darkColor={useThemeColor({}, "buttonText")}
+          >
+            {isConnecting ? "Disconnecting..." : "Disconnect Device"}
           </ThemedText>
         </Pressable>
       </ScrollView>
@@ -101,7 +105,7 @@ const styles = StyleSheet.create({
     backgroundColor: useThemeColor({}, "card"),
     alignItems: "center",
     justifyContent: "center",
-    alignSelf: 'center',
+    alignSelf: "center",
     shadowColor: useThemeColor({}, "text"),
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.12,
@@ -110,9 +114,9 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   infoRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     paddingHorizontal: 16,
     paddingVertical: 10,
   },
@@ -123,11 +127,11 @@ const styles = StyleSheet.create({
     marginHorizontal: 16,
     borderRadius: 10,
     paddingVertical: 16,
-    alignItems: 'center',
+    alignItems: "center",
     marginTop: 30,
   },
   disconnectButtonText: {
     fontSize: 17,
-    fontWeight: '600',
+    fontWeight: "600",
   },
 });

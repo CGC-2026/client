@@ -7,7 +7,7 @@ import { createMachine } from "xstate";
 import { BLEContextType } from "./BLE.Provider";
 
 // Define event types
-type BLEEvent = 
+type BLEEvent =
   | { type: "SCAN" }
   | { type: "STOP" }
   | { type: "PAIR" }
@@ -18,40 +18,40 @@ type BLEEvent =
 
 // Create a simpler BLE state machine
 const bleMachine = createMachine({
-  id: 'ble',
-  initial: 'idle',
+  id: "ble",
+  initial: "idle",
   schemas: {
     events: {} as BLEEvent,
   },
   states: {
     idle: {
-      on: { SCAN: 'scanning' }
+      on: { SCAN: "scanning" },
     },
     scanning: {
-      on: { 
-        STOP: 'idle',
-        PAIR: 'pairing'
+      on: {
+        STOP: "idle",
+        PAIR: "pairing",
       },
       after: {
-        [ble.deviceScanTimeout]: 'idle'
-      }
+        [ble.deviceScanTimeout]: "idle",
+      },
     },
     pairing: {
-      on: { 
-        CONNECTED: 'connected',
-        FAIL: 'idle'
-      }
+      on: {
+        CONNECTED: "connected",
+        FAIL: "idle",
+      },
     },
     connected: {
-      on: { 
-        DISCONNECT: 'idle',
-        SCAN: 'disconnecting'
-      }
+      on: {
+        DISCONNECT: "idle",
+        SCAN: "disconnecting",
+      },
     },
     disconnecting: {
-      on: { DISCONNECTED: 'scanning' }
-    }
-  }
+      on: { DISCONNECTED: "scanning" },
+    },
+  },
 });
 
 const BleContext = createContext<BLEContextType | null>(null);
@@ -65,16 +65,20 @@ export const IOSBleProvider: React.FC<{ children: React.ReactNode }> = ({
   const [pairedDevice, setPairedDevice] = useState<Device | null>(null);
   const [scanTimer, setScanTimer] = useState<NodeJS.Timeout | null>(null);
   const [isConnecting, setIsConnecting] = useState<boolean>(false);
-  const [connectingDeviceId, setConnectingDeviceId] = useState<string | null>(null);
-  
+  const [connectingDeviceId, setConnectingDeviceId] = useState<string | null>(
+    null,
+  );
+
   // Use XState to manage scanning/connection states
   const [state, send] = useMachine<typeof bleMachine>(bleMachine);
 
   // Clean up when unmounting
   useEffect(() => {
     return () => {
-      if (state.matches('scanning')) {
-        try { manager.stopDeviceScan(); } catch (e) {}
+      if (state.matches("scanning")) {
+        try {
+          manager.stopDeviceScan();
+        } catch (e) {}
       }
       if (scanTimer) {
         clearTimeout(scanTimer);
@@ -82,70 +86,75 @@ export const IOSBleProvider: React.FC<{ children: React.ReactNode }> = ({
     };
   }, [manager, scanTimer, state]);
 
-  const findDevices = async (options?: { serviceUUIDs?: string[], signalCancel?: AbortSignal }): Promise<boolean> => {
+  const findDevices = async (options?: {
+    serviceUUIDs?: string[];
+    signalCancel?: AbortSignal;
+  }): Promise<boolean> => {
     // If we're already scanning, stop first
-    if (state.matches('scanning')) {
-      try { await manager.stopDeviceScan(); } catch (e) {}
+    if (state.matches("scanning")) {
+      try {
+        await manager.stopDeviceScan();
+      } catch (e) {}
     }
 
     try {
       // Ensure Bluetooth is powered on
       await ensurePoweredOn(manager);
-      
+
       // Clear existing devices list
       setDevices([]);
-      
+
       // Move to scanning state
       send({ type: "SCAN" });
-      
+
       // Start scan
       manager.startDeviceScan(
         options?.serviceUUIDs ?? [],
         { allowDuplicates: true },
         (error, device) => {
           if (error) {
-            console.error('Scan error:', error);
+            console.error("Scan error:", error);
             send({ type: "STOP" });
             return;
           }
-          
+
           if (device) {
             // Add device if not already in list
-            setDevices(prev => {
-              if (prev.some(d => d.id === device.id)) {
+            setDevices((prev) => {
+              if (prev.some((d) => d.id === device.id)) {
                 return prev;
               }
               return [...prev, device];
             });
           }
-        }
+        },
       );
-      
+
       // Handle abort signal
       if (options?.signalCancel) {
-        options.signalCancel.addEventListener('abort', () => {
+        options.signalCancel.addEventListener("abort", () => {
           stopScan();
         });
       }
-      
+
       return true;
     } catch (error) {
-      console.error('Error in findDevices:', error);
+      console.error("Error in findDevices:", error);
       send({ type: "STOP" });
       return false;
     }
   };
 
   const stopScan = async (): Promise<void> => {
-    if (state.matches('scanning')) {
-      try { 
+    if (state.matches("scanning")) {
+      try {
         manager.stopDeviceScan();
-        send({ type: "STOP" }); 
+        send({ type: "STOP" });
       } catch (error) {
-        console.error('Error stopping scan:', error);
+        console.error("Error stopping scan:", error);
       }
     }
-    
+
     if (scanTimer) {
       clearTimeout(scanTimer);
       setScanTimer(null);
@@ -153,31 +162,31 @@ export const IOSBleProvider: React.FC<{ children: React.ReactNode }> = ({
   };
 
   const pairDevice = async (device: Device): Promise<boolean> => {
-    if (state.matches('scanning')) {
+    if (state.matches("scanning")) {
       await stopScan();
     }
-    
+
     if (pairedDevice) {
       try {
         await pairedDevice.cancelConnection();
       } catch (e) {
-        console.error('Error disconnecting from device:', e);
+        console.error("Error disconnecting from device:", e);
       } finally {
         setPairedDevice(null);
       }
     }
-    
+
     try {
       setIsConnecting(true);
       setConnectingDeviceId(device.id);
       send({ type: "PAIR" });
-      
+
       await device.connect();
       setPairedDevice(device);
       send({ type: "CONNECTED" });
       return true;
     } catch (e) {
-      console.error('Error pairing with device:', e);
+      console.error("Error pairing with device:", e);
       send({ type: "FAIL" });
       return false;
     } finally {
@@ -190,7 +199,7 @@ export const IOSBleProvider: React.FC<{ children: React.ReactNode }> = ({
     if (!pairedDevice) {
       return false;
     }
-    
+
     try {
       send({ type: "DISCONNECT" });
       await pairedDevice.cancelConnection();
@@ -198,26 +207,31 @@ export const IOSBleProvider: React.FC<{ children: React.ReactNode }> = ({
       send({ type: "DISCONNECTED" });
       return true;
     } catch (e) {
-      console.error('Error disconnecting from device:', e);
+      console.error("Error disconnecting from device:", e);
       return false;
     }
   };
 
   // sorted and properly filtered devices by rssi
   const sortedDevices = useMemo(() => {
-    return devices.sort((a, b) => {
-      return (b.rssi ?? 0) - (a.rssi ?? 0);
-    }).filter((device) => {
-      return device.rssi !== null;
-    })
-    // make sure the samee device is not in the list twice
-    .filter((device, index, self) =>
-      index === self.findIndex((t) => t.id === device.id)
-    )
-    // if we are paired, remove the paired device from the list
-    .filter((device) => {
-      return device.id !== pairedDevice?.id;
-    });
+    return (
+      devices
+        .sort((a, b) => {
+          return (b.rssi ?? 0) - (a.rssi ?? 0);
+        })
+        .filter((device) => {
+          return device.rssi !== null;
+        })
+        // make sure the samee device is not in the list twice
+        .filter(
+          (device, index, self) =>
+            index === self.findIndex((t) => t.id === device.id),
+        )
+        // if we are paired, remove the paired device from the list
+        .filter((device) => {
+          return device.id !== pairedDevice?.id;
+        })
+    );
   }, [devices]);
 
   return (
@@ -228,10 +242,10 @@ export const IOSBleProvider: React.FC<{ children: React.ReactNode }> = ({
         pairDevice,
         disconnectDevice,
         devices: sortedDevices,
-        isScanning: state.matches('scanning'),
+        isScanning: state.matches("scanning"),
         pairedDevice,
         isConnecting,
-        connectingDeviceId
+        connectingDeviceId,
       }}
     >
       {children}

@@ -5,8 +5,10 @@ interface KneeIconProps {
 }
 
 export default function KneeIcon({ size = 60 }: KneeIconProps) {
-
   return (
-    <Image source={require('@/components/assets/knee.png')} style={{ width: size, height: size }} />
+    <Image
+      source={require("@/components/assets/knee.png")}
+      style={{ width: size, height: size }}
+    />
   );
 }

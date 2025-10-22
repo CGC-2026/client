@@ -20,7 +20,7 @@ export default function DeviceInfoHeader({ device }: DeviceInfoHeaderProps) {
 
       {/* Device Name */}
       <Text style={[styles.deviceName, { color: textColor }]}>
-        {device.name || 'Unnamed Device'}
+        {device.name || "Unnamed Device"}
       </Text>
 
       {/* Connection Status */}
@@ -38,7 +38,7 @@ export default function DeviceInfoHeader({ device }: DeviceInfoHeaderProps) {
 
 const styles = StyleSheet.create({
   container: {
-    alignItems: 'center',
+    alignItems: "center",
     paddingVertical: 32,
   },
   iconContainer: {
@@ -46,19 +46,19 @@ const styles = StyleSheet.create({
   },
   deviceName: {
     fontSize: 24,
-    fontWeight: '700',
+    fontWeight: "700",
     marginBottom: 8,
-    textAlign: 'center',
+    textAlign: "center",
   },
   connectionStatus: {
     fontSize: 16,
     marginBottom: 8,
-    textAlign: 'center',
+    textAlign: "center",
   },
   deviceId: {
     fontSize: 12,
-    fontFamily: 'monospace',
-    textAlign: 'center',
+    fontFamily: "monospace",
+    textAlign: "center",
     opacity: 0.7,
   },
 });
