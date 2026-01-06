@@ -4,16 +4,16 @@ import ScanButton from "@/components/bluetooth/ScanButton";
 import ScreenHeader from "@/components/bluetooth/ScreenHeader";
 import SectionHeader from "@/components/bluetooth/SectionHeader";
 import { ThemedView } from "@/components/ThemedView";
+import { ble } from "@/constants/BLE";
 import { useBLE } from "@/contexts/BLE.Provider";
 import { useStorage } from "@/contexts/Storage.Provider";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { Stack, useRouter } from "expo-router";
-import { useEffect, useRef } from "react";
+import { useEffect } from "react";
 import { ScrollView, StyleSheet, View } from "react-native";
 import { Device } from "react-native-ble-plx";
 
 export default function BluetoothScreen() {
-  const firstRender = useRef(true);
   const {
     findDevices,
     stopScan,
@@ -32,7 +32,7 @@ export default function BluetoothScreen() {
 
   useEffect(() => {
     // scan for devices on first render
-    findDevices();
+    findDevices({ serviceUUIDs: [ble.smartKneeServiceUUID] });
   }, []);
 
   const handleDevicePress = async (device: Device) => {
@@ -66,7 +66,8 @@ export default function BluetoothScreen() {
           <ScreenHeader title="Devices" subtitle="Connect to your device" />
           <ScanButton
             isScanning={isScanning}
-            onPress={isScanning ? stopScan : findDevices}
+            onPress={isScanning ? stopScan : () => findDevices({ serviceUUIDs: [ble.smartKneeServiceUUID] })
+          }
             disabled={isConnecting}
           />
         </View>

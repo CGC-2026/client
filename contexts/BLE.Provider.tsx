@@ -63,9 +63,11 @@ export default function BLEProvider({
 }
 
 export const useBLE = (): BLEContextType => {
-  if (Platform.OS === "ios") {
-    return useIOSBle();
-  } else {
+  const iosContext = useIOSBle();
+
+  if (Platform.OS !== "ios") {
     throw new Error("BLEProvider is not supported on this platform");
   }
+
+  return iosContext;
 };

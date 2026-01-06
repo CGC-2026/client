@@ -1,31 +1,31 @@
-import { useSignUp, useSSO } from "@clerk/clerk-expo";
-import { Link, useRouter } from "expo-router";
-import { useState } from "react";
-import type { OAuthStrategy } from "@clerk/types";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import {
-  View,
-  Text,
-  Pressable,
-  StyleSheet,
-  ScrollView,
-  ActivityIndicator,
-} from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
-import * as WebBrowser from "expo-web-browser";
 import {
   signUpSchema,
   verificationCodeSchema,
   type SignUpFormData,
   type VerificationCodeFormData,
 } from "@/app/types/authSchemas";
-import { ControlledInput } from "@/components/ui/ControlledInput";
 import OAuthProviderButtons from "@/components/auth/OAuthProviderButtons";
+import { ControlledInput } from "@/components/ui/ControlledInput";
+import CustomKeyboardAvoidingView from "@/components/ui/CustomKeyboardAvoidingView";
 import Divider from "@/components/ui/Divider";
 import { ErrorMessage } from "@/components/ui/ErrorMessage";
 import { useThemeColor } from "@/hooks/useThemeColor";
-import CustomKeyboardAvoidingView from "@/components/ui/CustomKeyboardAvoidingView";
+import { useSignUp, useSSO } from "@clerk/clerk-expo";
+import type { OAuthStrategy } from "@clerk/types";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { Link, useRouter } from "expo-router";
+import * as WebBrowser from "expo-web-browser";
+import { useState } from "react";
+import { useForm } from "react-hook-form";
+import {
+  ActivityIndicator,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -78,7 +78,7 @@ export default function SignUpScreen() {
 
       if (createdSessionId) {
         await ssoSetActive!({ session: createdSessionId });
-        router.replace("/(tabs)");
+        router.replace("/onboarding");
       }
     } catch (err: any) {
       console.error(`${provider} SSO error:`, err);
@@ -132,7 +132,7 @@ export default function SignUpScreen() {
 
       if (completeSignUp.status === "complete") {
         await setActive({ session: completeSignUp.createdSessionId });
-        router.replace("/(tabs)");
+        router.replace("/onboarding");
       } else {
         console.error(
           "Sign up incomplete:",

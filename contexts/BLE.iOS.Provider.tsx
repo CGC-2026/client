@@ -1,10 +1,12 @@
 import { ble } from "@/constants/BLE";
 import { ensurePoweredOn } from "@/helpers/BLE";
 import { useMachine } from "@xstate/react";
-import { createContext, useContext, useEffect, useMemo, useState } from "react";
+import { createContext, useContext, useEffect, useMemo, useRef, useState } from "react";
+import { Alert } from "react-native";
 import { BleManager, Device } from "react-native-ble-plx";
 import { createMachine } from "xstate";
 import { BLEContextType } from "./BLE.Provider";
+import { useStorage } from "./Storage.Provider";
 
 // Define event types
 type BLEEvent =
@@ -59,8 +61,8 @@ const BleContext = createContext<BLEContextType | null>(null);
 export const IOSBleProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
-  // Create BLE manager
-  const manager = new BleManager();
+  // Create BLE manager as singleton using useRef
+  const manager = useRef(new BleManager()).current;
   const [devices, setDevices] = useState<Device[]>([]);
   const [pairedDevice, setPairedDevice] = useState<Device | null>(null);
   const [scanTimer, setScanTimer] = useState<NodeJS.Timeout | null>(null);
@@ -71,6 +73,86 @@ export const IOSBleProvider: React.FC<{ children: React.ReactNode }> = ({
 
   // Use XState to manage scanning/connection states
   const [state, send] = useMachine<typeof bleMachine>(bleMachine);
+
+  // Storage for persisting last connected device ID
+  const [lastDeviceId, setLastDeviceId] = useStorage("ble.lastDeviceId");
+
+  // Recover connection state on mount and handle auto-reconnect
+  useEffect(() => {
+    const recoverOrReconnect = async () => {
+      try {
+        // First, check if device is already connected at iOS level
+        console.log("[BLE] Checking for existing connections...");
+        const connectedDevices = await manager.connectedDevices([
+          ble.smartKneeServiceUUID,
+        ]);
+
+        if (connectedDevices.length > 0) {
+          const device = connectedDevices[0];
+          console.log("[BLE] Recovered existing connection:", device.id, device.name);
+          setPairedDevice(device);
+          send({ type: "CONNECTED" });
+          
+          // Set up disconnect listener
+          device.onDisconnected((error) => {
+            console.log("[BLE] Device unexpectedly disconnected:", error);
+            setPairedDevice(null);
+            send({ type: "DISCONNECTED" });
+          });
+          
+          return;
+        }
+
+        // No active connection, try auto-reconnect if we have a stored device ID
+        if (lastDeviceId) {
+          console.log("[BLE] Attempting auto-reconnect to last device:", lastDeviceId);
+          
+          try {
+            // Ensure Bluetooth is powered on
+            await ensurePoweredOn(manager);
+            
+            // Try to get the device by ID and connect
+            const device = await manager.devices([lastDeviceId]).then(devices => devices[0]);
+            
+            if (device) {
+              console.log("[BLE] Found last device, attempting to reconnect...");
+              
+              // Add timeout to prevent hanging forever
+              const connectWithTimeout = Promise.race([
+                device.connect({ requestMTU: 512 }),
+                new Promise<never>((_, reject) => 
+                  setTimeout(() => reject(new Error("Connection timeout")), 10000)
+                )
+              ]);
+              
+              const connected = await connectWithTimeout;
+              await connected.discoverAllServicesAndCharacteristics();
+              
+              console.log("[BLE] Auto-reconnect successful!");
+              setPairedDevice(connected);
+              send({ type: "CONNECTED" });
+              
+              // Set up disconnect listener
+              connected.onDisconnected((error) => {
+                console.log("[BLE] Device unexpectedly disconnected:", error);
+                setPairedDevice(null);
+                send({ type: "DISCONNECTED" });
+              });
+            } else {
+              console.log("[BLE] Last device not found, may be out of range");
+            }
+          } catch (reconnectError) {
+            console.log("[BLE] Auto-reconnect failed (device may be out of range):", reconnectError);
+            // Don't show error to user - this is expected if device is off/out of range
+          }
+        }
+      } catch (error) {
+        console.error("[BLE] Failed to recover connection state:", error);
+      }
+    };
+
+    recoverOrReconnect();
+  }, []); // Run once on mount
 
   // Clean up when unmounting
   useEffect(() => {
@@ -110,7 +192,7 @@ export const IOSBleProvider: React.FC<{ children: React.ReactNode }> = ({
       // Start scan
       manager.startDeviceScan(
         options?.serviceUUIDs ?? [],
-        { allowDuplicates: true },
+        { allowDuplicates: false },
         (error, device) => {
           if (error) {
             console.error("Scan error:", error);
@@ -176,17 +258,132 @@ export const IOSBleProvider: React.FC<{ children: React.ReactNode }> = ({
       }
     }
 
+    let connectedDevice: Device | null = null;
+
     try {
       setIsConnecting(true);
       setConnectingDeviceId(device.id);
       send({ type: "PAIR" });
 
-      await device.connect();
-      setPairedDevice(device);
+      console.log("[BLE] Attempting to connect to device:", device.id);
+
+      // Connect to device with timeout to prevent hanging
+      const connectWithTimeout = Promise.race([
+        device.connect({ requestMTU: 512 }),
+        new Promise<never>((_, reject) => 
+          setTimeout(() => reject(new Error("Connection timeout after 15 seconds")), 15000)
+        )
+      ]);
+      
+      connectedDevice = await connectWithTimeout;
+
+      // Discover all services and characteristics
+      // This triggers iOS bonding if any characteristic requires encryption
+      await connectedDevice.discoverAllServicesAndCharacteristics();
+
+      // Try to read from the Smart Knee service to trigger bonding
+      // iOS will automatically prompt for pairing if encryption is required
+      try {
+        const services = await connectedDevice.services();
+        const smartKneeService = services.find(
+          (s) => s.uuid.toLowerCase() === ble.smartKneeServiceUUID.toLowerCase(),
+        );
+        console.log("services", services);
+        if (smartKneeService) {
+          const characteristics = await smartKneeService.characteristics();
+          // Attempt to read the first readable characteristic to trigger bonding
+          const readableChar = characteristics.find((c) => c.isReadable);
+          if (readableChar) {
+            await readableChar.read();
+          }
+        }
+      } catch (bondingError) {
+        // If user cancels bonding dialog, disconnect and fail pairing
+        console.log("[BLE] Bonding cancelled or failed:", bondingError);
+        if (connectedDevice) {
+          try {
+            await connectedDevice.cancelConnection();
+          } catch (disconnectError) {
+            console.error("[BLE] Error disconnecting after bonding failure:", disconnectError);
+          }
+        }
+        send({ type: "FAIL" });
+        return false;
+      }
+
+      // Set up disconnect listener to handle unexpected disconnections
+      connectedDevice.onDisconnected((error) => {
+        console.log("[BLE] Device unexpectedly disconnected:", error);
+        setPairedDevice(null);
+        send({ type: "DISCONNECTED" });
+      });
+
+      // Save device ID to storage for auto-reconnect
+      console.log("[BLE] Pairing successful, saving device ID to storage");
+      await setLastDeviceId(connectedDevice.id);
+
+      setPairedDevice(connectedDevice);
       send({ type: "CONNECTED" });
       return true;
-    } catch (e) {
-      console.error("Error pairing with device:", e);
+    } catch (e: any) {
+      // Check if this is a bonding mismatch error (error 200)
+      const isBondingError = e?.errorCode === 200 || 
+                            e?.message?.toLowerCase().includes("pairing information") ||
+                            e?.message?.toLowerCase().includes("peer removed pairing");
+
+      if (isBondingError) {
+        console.error("[BLE] Bonding mismatch detected (error 200):", {
+          error: e,
+          message: e?.message,
+          errorCode: e?.errorCode,
+        });
+
+        // Clean up any partial connection
+        if (connectedDevice) {
+          try {
+            await connectedDevice.cancelConnection();
+          } catch (disconnectError) {
+            console.error("[BLE] Error disconnecting after bonding error:", disconnectError);
+          }
+        }
+
+        // Show user-friendly alert explaining how to fix
+        // iOS cannot automatically clear bonding keys - user must do it manually
+        Alert.alert(
+          "Device Pairing Issue",
+          `This device was previously paired but has been reset.\n\nTo reconnect, you need to:\n\n` +
+          `1. Go to iOS Settings → Bluetooth\n` +
+          `2. Find "${device.name || 'the device'}" in "My Devices"\n` +
+          `3. Tap the (i) icon next to it\n` +
+          `4. Tap "Forget This Device"\n` +
+          `5. Return to this app and try pairing again`,
+          [{ text: "OK" }]
+        );
+
+        send({ type: "FAIL" });
+        return false;
+      }
+
+      // Not a bonding error - log and fail
+      console.error("[BLE] Error pairing with device:", {
+        error: e,
+        message: e?.message,
+        errorCode: e?.errorCode,
+        reason: e?.reason,
+        iosError: e?.iosError,
+        attError: e?.attError,
+        deviceId: device.id,
+        deviceName: device.name,
+      });
+
+      // If connection was established but something else failed, disconnect
+      if (connectedDevice) {
+        try {
+          await connectedDevice.cancelConnection();
+        } catch (disconnectError) {
+          console.error("[BLE] Error disconnecting after pairing error:", disconnectError);
+        }
+      }
       send({ type: "FAIL" });
       return false;
     } finally {
@@ -205,6 +402,11 @@ export const IOSBleProvider: React.FC<{ children: React.ReactNode }> = ({
       await pairedDevice.cancelConnection();
       setPairedDevice(null);
       send({ type: "DISCONNECTED" });
+      
+      // Clear the stored device ID since we're manually disconnecting
+      console.log("[BLE] Clearing stored device ID after disconnect");
+      await setLastDeviceId(null);
+      
       return true;
     } catch (e) {
       console.error("Error disconnecting from device:", e);
