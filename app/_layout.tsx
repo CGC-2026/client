@@ -2,6 +2,7 @@ import AuthProvider from "@/contexts/Auth.Provider";
 import BLEProvider from "@/contexts/BLE.Provider";
 import MenuProvider from "@/contexts/Menu.Provider";
 import QueryProvider from "@/contexts/QueryClient.Provider";
+import { StorageProvider } from "@/contexts/Storage.Provider";
 import { useColorScheme } from "@/hooks/useColorScheme";
 import {
   DarkTheme,
@@ -27,10 +28,11 @@ export default function RootLayout() {
   return (
     <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
       <QueryProvider>
-        <AuthProvider>
-          <BLEProvider>
-            <MenuProvider>
-              <Stack>
+        <StorageProvider>
+          <AuthProvider>
+            <BLEProvider>
+              <MenuProvider>
+                <Stack>
                 <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
                 <Stack.Screen
                   name="sign-in"
@@ -44,12 +46,17 @@ export default function RootLayout() {
                   name="forgot-password"
                   options={{ title: "Forgot Password" }}
                 />
+                <Stack.Screen
+                  name="onboarding"
+                  options={{ headerShown: false, gestureEnabled: false }}
+                />
                 <Stack.Screen name="+not-found" />
-              </Stack>
-              <StatusBar style="auto" />
-            </MenuProvider>
-          </BLEProvider>
-        </AuthProvider>
+                </Stack>
+                <StatusBar style="auto" />
+              </MenuProvider>
+            </BLEProvider>
+          </AuthProvider>
+        </StorageProvider>
       </QueryProvider>
     </ThemeProvider>
   );

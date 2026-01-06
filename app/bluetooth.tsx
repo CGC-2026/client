@@ -5,6 +5,7 @@ import ScreenHeader from "@/components/bluetooth/ScreenHeader";
 import SectionHeader from "@/components/bluetooth/SectionHeader";
 import { ThemedView } from "@/components/ThemedView";
 import { useBLE } from "@/contexts/BLE.Provider";
+import { useStorage } from "@/contexts/Storage.Provider";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { Stack, useRouter } from "expo-router";
 import { useEffect, useRef } from "react";
@@ -24,6 +25,7 @@ export default function BluetoothScreen() {
     isConnecting,
     connectingDeviceId,
   } = useBLE();
+  const [, setLastDeviceId] = useStorage("ble.lastDeviceId");
 
   const router = useRouter();
   const themedStyles = createThemedStyles();
@@ -40,7 +42,8 @@ export default function BluetoothScreen() {
     }
     const success = await pairDevice(device);
     if (success) {
-      // TODO Saved paired device to storage if it is new
+      // Save paired device ID to storage for auto-reconnection
+      await setLastDeviceId(device.id);
       // Go back to My Devices screen
       router.back();
     }
