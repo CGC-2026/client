@@ -1,6 +1,7 @@
 import { ble } from "@/constants/BLE";
 import { ensurePoweredOn } from "@/helpers/BLE";
 import { useMachine } from "@xstate/react";
+import { Buffer } from "buffer";
 import { createContext, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { Alert } from "react-native";
 import { BleManager, Device } from "react-native-ble-plx";
@@ -58,8 +59,9 @@ const bleMachine = createMachine({
 
 const BleContext = createContext<BLEContextType | null>(null);
 
-export const IOSBleProvider: React.FC<{ children: React.ReactNode }> = ({
+export const IOSBleProvider: React.FC<{ children: React.ReactNode, reconnectUUIDs: string[] }> = ({
   children,
+  reconnectUUIDs
 }) => {
   // Create BLE manager as singleton using useRef
   const manager = useRef(new BleManager()).current;
@@ -83,9 +85,8 @@ export const IOSBleProvider: React.FC<{ children: React.ReactNode }> = ({
       try {
         // First, check if device is already connected at iOS level
         console.log("[BLE] Checking for existing connections...");
-        const connectedDevices = await manager.connectedDevices([
-          ble.smartKneeServiceUUID,
-        ]);
+        // Query all connected BLE devices (generic approach)
+        const connectedDevices = await manager.connectedDevices(reconnectUUIDs);
 
         if (connectedDevices.length > 0) {
           const device = connectedDevices[0];
@@ -243,7 +244,10 @@ export const IOSBleProvider: React.FC<{ children: React.ReactNode }> = ({
     }
   };
 
-  const pairDevice = async (device: Device): Promise<boolean> => {
+  const pairDevice = async (
+    device: Device,
+    options?: { bondingServiceUUID?: string },
+  ): Promise<boolean> => {
     if (state.matches("scanning")) {
       await stopScan();
     }
@@ -281,19 +285,34 @@ export const IOSBleProvider: React.FC<{ children: React.ReactNode }> = ({
       // This triggers iOS bonding if any characteristic requires encryption
       await connectedDevice.discoverAllServicesAndCharacteristics();
 
-      // Try to read from the Smart Knee service to trigger bonding
+      // Try to read from a characteristic to trigger bonding
       // iOS will automatically prompt for pairing if encryption is required
       try {
         const services = await connectedDevice.services();
-        const smartKneeService = services.find(
-          (s) => s.uuid.toLowerCase() === ble.smartKneeServiceUUID.toLowerCase(),
-        );
-        console.log("services", services);
-        if (smartKneeService) {
-          const characteristics = await smartKneeService.characteristics();
+        console.log("[BLE] Discovered services:", services.map(s => s.uuid));
+        
+        let targetService = null;
+        
+        // Use provided bondingServiceUUID if available
+        if (options?.bondingServiceUUID) {
+          targetService = services.find(
+            (s) => s.uuid.toLowerCase() === options.bondingServiceUUID!.toLowerCase(),
+          );
+          console.log("[BLE] Looking for bonding service:", options.bondingServiceUUID, "found:", !!targetService);
+        }
+        
+        // Fallback: use first available service if no specific UUID provided
+        if (!targetService && services.length > 0) {
+          targetService = services[0];
+          console.log("[BLE] Using first available service for bonding:", targetService.uuid);
+        }
+        
+        if (targetService) {
+          const characteristics = await targetService.characteristics();
           // Attempt to read the first readable characteristic to trigger bonding
           const readableChar = characteristics.find((c) => c.isReadable);
           if (readableChar) {
+            console.log("[BLE] Reading characteristic to trigger bonding:", readableChar.uuid);
             await readableChar.read();
           }
         }
@@ -414,6 +433,111 @@ export const IOSBleProvider: React.FC<{ children: React.ReactNode }> = ({
     }
   };
 
+  // Generic BLE characteristic operations
+  const readCharacteristic = async (
+    serviceUUID: string,
+    characteristicUUID: string,
+  ): Promise<string | null> => {
+    if (!pairedDevice) {
+      console.error("[BLE] Cannot read characteristic: no paired device");
+      return null;
+    }
+
+    try {
+      const characteristic = await pairedDevice.readCharacteristicForService(
+        serviceUUID,
+        characteristicUUID,
+      );
+      return characteristic.value;
+    } catch (error) {
+      console.error("[BLE] Error reading characteristic:", error);
+      return null;
+    }
+  };
+
+  const writeCharacteristic = async (
+    serviceUUID: string,
+    characteristicUUID: string,
+    base64Data: string,
+  ): Promise<boolean> => {
+    if (!pairedDevice) {
+      console.error("[BLE] Cannot write characteristic: no paired device");
+      return false;
+    }
+
+    try {
+      await pairedDevice.writeCharacteristicWithResponseForService(
+        serviceUUID,
+        characteristicUUID,
+        base64Data,
+      );
+      return true;
+    } catch (error) {
+      console.error("[BLE] Error writing characteristic:", error);
+      return false;
+    }
+  };
+
+  const subscribeToCharacteristic = async (
+    serviceUUID: string,
+    characteristicUUID: string,
+    callback: (data: string | null) => void,
+  ): Promise<(() => void) | null> => {
+    if (!pairedDevice) {
+      console.error("[BLE] Cannot subscribe to characteristic: no paired device");
+      return null;
+    }
+  
+    try {
+      console.log(`[BLE] Setting up monitor for service: ${serviceUUID}, characteristic: ${characteristicUUID}`);
+      
+      // IMPORTANT: Read the characteristic first to ensure it's accessible
+      // and to verify notifications are actually supported
+      try {
+        console.log("[BLE] Reading characteristic to verify accessibility...");
+        const initialValue = await pairedDevice.readCharacteristicForService(
+          serviceUUID,
+          characteristicUUID
+        );
+        console.log("[BLE] Initial read successful, value:", initialValue?.value ? 'present' : 'null');
+        
+        // Send initial value to callback if present
+        if (initialValue?.value) {
+          callback(initialValue.value);
+        }
+      } catch (readError) {
+        console.warn("[BLE] Initial read failed (may be normal if characteristic is notify-only):", readError);
+      }
+      
+      // Now set up the monitor
+      const subscription = pairedDevice.monitorCharacteristicForService(
+        serviceUUID,
+        characteristicUUID,
+        (error, characteristic) => {
+          if (error) {
+            console.error("[BLE] Notification error:", error);
+            callback(null);
+            return;
+          }
+          
+          console.log(`[BLE] Notification received! Value: ${characteristic?.value ? 'present' : 'null'}, Length: ${characteristic?.value ? Buffer.from(characteristic.value, 'base64').length : 0} bytes`);
+          callback(characteristic?.value ?? null);
+        },
+      );
+  
+      console.log("[BLE] Monitor subscription successful, waiting for notifications...");
+      
+      // Return cleanup function
+      return () => {
+        console.log("[BLE] Removing characteristic monitor subscription");
+        subscription.remove();
+      };
+    } catch (error) {
+      console.error("[BLE] Error subscribing to characteristic:", error);
+      return null;
+    }
+  };
+
   // sorted and properly filtered devices by rssi
   const sortedDevices = useMemo(() => {
     return (
@@ -448,6 +572,9 @@ export const IOSBleProvider: React.FC<{ children: React.ReactNode }> = ({
         pairedDevice,
         isConnecting,
         connectingDeviceId,
+        readCharacteristic,
+        writeCharacteristic,
+        subscribeToCharacteristic,
       }}
     >
       {children}

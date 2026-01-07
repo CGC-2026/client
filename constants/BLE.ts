@@ -10,3 +10,7 @@ export const ble = {
   controlCharacteristicUUID: "40365860-3000-425d-96e9-9c4335c2178c",
   fusedDataCharacteristicUUID: "3a60dad0-2b13-49ac-be1d-4628b9a19e59",
 } as const;
+
+// Streaming configuration
+export const DEFAULT_SAMPLE_RATE = 50; // Hz
+export const SAMPLE_RATES = [10, 25, 50, 100] as const; // Available sample rates

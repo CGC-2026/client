@@ -20,9 +20,11 @@ export type BLEContextType = {
   /**
    * Attempts to connect to the device. Returns true on success, false otherwise.
    * @param device The device to connect to.
+   * @param options Optional configuration for pairing
+   * @param options.bondingServiceUUID Service UUID to use for triggering iOS bonding (optional)
    * @returns True on success, false otherwise.
    */
-  pairDevice: (device: Device) => Promise<boolean>;
+  pairDevice: (device: Device, options?: { bondingServiceUUID?: string }) => Promise<boolean>;
   /**
    * Disconnects from the currently paired device. Returns true on success, false otherwise.
    * @returns True on success, false otherwise.
@@ -48,15 +50,51 @@ export type BLEContextType = {
    * The ID of the device that's currently being connected to (if any)
    */
   connectingDeviceId: string | null;
+  /**
+   * Reads a characteristic value from the paired device
+   * @param serviceUUID The service UUID
+   * @param characteristicUUID The characteristic UUID
+   * @returns The base64-encoded value or null if failed
+   */
+  readCharacteristic: (
+    serviceUUID: string,
+    characteristicUUID: string,
+  ) => Promise<string | null>;
+  /**
+   * Writes data to a characteristic on the paired device
+   * @param serviceUUID The service UUID
+   * @param characteristicUUID The characteristic UUID
+   * @param base64Data The base64-encoded data to write
+   * @returns True on success, false otherwise
+   */
+  writeCharacteristic: (
+    serviceUUID: string,
+    characteristicUUID: string,
+    base64Data: string,
+  ) => Promise<boolean>;
+  /**
+   * Subscribes to notifications from a characteristic
+   * @param serviceUUID The service UUID
+   * @param characteristicUUID The characteristic UUID
+   * @param callback Function called when data is received
+   * @returns Cleanup function to unsubscribe, or null if failed
+   */
+  subscribeToCharacteristic: (
+    serviceUUID: string,
+    characteristicUUID: string,
+    callback: (data: string | null) => void,
+  ) => Promise<(() => void) | null>;
 };
 
 export default function BLEProvider({
   children,
+  reconnectUUIDs,
 }: {
   children: React.ReactNode;
+  reconnectUUIDs: string[];
 }) {
   if (Platform.OS === "ios") {
-    return <IOSBleProvider>{children}</IOSBleProvider>;
+    return <IOSBleProvider reconnectUUIDs={reconnectUUIDs}>{children}</IOSBleProvider>;
   } else {
     return <>{children}</>;
   }

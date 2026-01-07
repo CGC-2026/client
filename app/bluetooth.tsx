@@ -40,7 +40,9 @@ export default function BluetoothScreen() {
       // disconnect the device
       await disconnectDevice();
     }
-    const success = await pairDevice(device);
+    const success = await pairDevice(device, {
+      bondingServiceUUID: ble.smartKneeServiceUUID,
+    });
     if (success) {
       // Save paired device ID to storage for auto-reconnection
       await setLastDeviceId(device.id);

@@ -70,7 +70,9 @@ export default function OnboardingScreen() {
 
   const handleDevicePress = useCallback(
     async (device: Device) => {
-      const success = await pairDevice(device);
+      const success = await pairDevice(device, {
+        bondingServiceUUID: ble.smartKneeServiceUUID,
+      });
       if (success) {
         // Save paired device ID for auto-reconnection
         await setLastDeviceId(device.id);
