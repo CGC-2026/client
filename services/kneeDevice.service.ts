@@ -1,4 +1,4 @@
-import { ble } from "@/constants/BLE";
+import { ble, DEFAULT_SAMPLE_RATE } from "@/constants/BLE";
 import { BLEContextType } from "@/contexts/BLE.Provider";
 import { Buffer } from "buffer";
 
@@ -46,9 +46,7 @@ export class KneeDeviceService {
    * @param sampleRate Sample rate in Hz (default: 50)
    * @returns Promise<boolean> - True if command was sent successfully
    */
-  async startStreaming(sampleRate: number = 50): Promise<boolean> {
-    console.log(`[KneeDevice] Starting streaming at ${sampleRate} Hz`);
-    
+  async startStreaming(sampleRate: number = DEFAULT_SAMPLE_RATE): Promise<boolean> {
     const controlData = this.encodeControlState({
       stream: 1,
       sampleRate,
@@ -61,9 +59,7 @@ export class KneeDeviceService {
       controlData,
     );
 
-    if (success) {
-      console.log("[KneeDevice] Streaming started successfully");
-    } else {
+    if (!success) {
       console.error("[KneeDevice] Failed to start streaming");
     }
 
@@ -75,11 +71,9 @@ export class KneeDeviceService {
    * @returns Promise<boolean> - True if command was sent successfully
    */
   async stopStreaming(): Promise<boolean> {
-    console.log("[KneeDevice] Stopping streaming");
-    
     const controlData = this.encodeControlState({
       stream: 0,
-      sampleRate: 50, // Sample rate doesn't matter when stopping
+      sampleRate: DEFAULT_SAMPLE_RATE, // Sample rate doesn't matter when stopping
       mode: StreamingMode.IDLE,
     });
 
@@ -89,9 +83,7 @@ export class KneeDeviceService {
       controlData,
     );
 
-    if (success) {
-      console.log("[KneeDevice] Streaming stopped successfully");
-    } else {
+    if (!success) {
       console.error("[KneeDevice] Failed to stop streaming");
     }
 
@@ -134,16 +126,10 @@ export class KneeDeviceService {
   async subscribeToSensorData(
     callback: (data: SensorData | null) => void,
   ): Promise<(() => void) | null> {
-    console.log("[KneeDevice] Subscribing to sensor data notifications");
-    console.log(`[KneeDevice] Service UUID: ${ble.smartKneeServiceUUID}`);
-    console.log(`[KneeDevice] Characteristic UUID: ${ble.fusedDataCharacteristicUUID}`);
-    
     const unsubscribe = await this.bleProvider.subscribeToCharacteristic(
       ble.smartKneeServiceUUID,
       ble.fusedDataCharacteristicUUID,
       (base64Data) => {
-        console.log("[KneeDevice] Callback triggered with data:", base64Data ? "YES" : "NO");
-        
         if (!base64Data) {
           console.warn("[KneeDevice] Received null/empty data");
           callback(null);
@@ -151,9 +137,7 @@ export class KneeDeviceService {
         }
 
         try {
-          console.log(`[KneeDevice] Parsing packet (base64 length: ${base64Data.length})`);
           const parsed = this.parseFusedPacket(base64Data);
-          console.log("[KneeDevice] Parsed data:", parsed);
           callback(parsed);
         } catch (error) {
           console.error("[KneeDevice] Error parsing sensor data:", error);
@@ -162,9 +146,7 @@ export class KneeDeviceService {
       },
     );
 
-    if (unsubscribe) {
-      console.log("[KneeDevice] Successfully subscribed to sensor data");
-    } else {
+    if (!unsubscribe) {
       console.error("[KneeDevice] Failed to subscribe to sensor data");
     }
 

@@ -12,5 +12,5 @@ export const ble = {
 } as const;
 
 // Streaming configuration
-export const DEFAULT_SAMPLE_RATE = 50; // Hz
-export const SAMPLE_RATES = [10, 25, 50, 100] as const; // Available sample rates
+export const DEFAULT_SAMPLE_RATE = 120; // Hz
+export const SAMPLE_RATES = [120] as const; // Available sample rates

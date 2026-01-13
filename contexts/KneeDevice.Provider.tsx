@@ -59,15 +59,12 @@ export const KneeDeviceProvider: React.FC<{ children: React.ReactNode }> = ({
 
     const setupSubscription = async () => {
       if (ble.pairedDevice) {
-        console.log("[KneeDeviceContext] Device paired, subscribing to sensor data");
-        
         unsubscribe = await kneeService.subscribeToSensorData((data) => {
           if (data) {
             setSensorData(data);
           }
         });
       } else {
-        console.log("[KneeDeviceContext] No paired device");
         setSensorData(null);
         setIsStreaming(false);
       }
@@ -78,7 +75,6 @@ export const KneeDeviceProvider: React.FC<{ children: React.ReactNode }> = ({
     // Cleanup subscription when device disconnects or component unmounts
     return () => {
       if (unsubscribe) {
-        console.log("[KneeDeviceContext] Cleaning up sensor data subscription");
         unsubscribe();
       }
     };
@@ -114,7 +110,6 @@ export const KneeDeviceProvider: React.FC<{ children: React.ReactNode }> = ({
   const readControlState = async (): Promise<void> => {
     const state = await kneeService.readControlState();
     if (state) {
-      console.log("[KneeDeviceContext] Control state:", state);
       setIsStreaming(state.stream === 1);
       setSampleRate(state.sampleRate);
     }
