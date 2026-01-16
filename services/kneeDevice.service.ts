@@ -43,7 +43,7 @@ export class KneeDeviceService {
 
   /**
    * Start streaming sensor data from the device
-   * @param sampleRate Sample rate in Hz (default: 50)
+   * @param sampleRate Sample rate in Hz
    * @returns Promise<boolean> - True if command was sent successfully
    */
   async startStreaming(sampleRate: number = DEFAULT_SAMPLE_RATE): Promise<boolean> {
@@ -163,8 +163,8 @@ export class KneeDeviceService {
 
     // Validate packet size
     if (buffer.length !== 14) {
-      console.warn(
-        `[KneeDevice] Unexpected packet size: ${buffer.length} bytes (expected 14)`,
+      throw new Error(
+        `[KneeDevice] parseFusedPacket: Invalid packet size: ${buffer.length} bytes (expected 14). base64: ${base64Data}`,
       );
     }
 

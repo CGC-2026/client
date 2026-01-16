@@ -3,7 +3,7 @@ import { ensurePoweredOn } from "@/helpers/BLE";
 import { useMachine } from "@xstate/react";
 import { createContext, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { Alert } from "react-native";
-import { BleManager, Device } from "react-native-ble-plx";
+import { BleManager, Device, Subscription } from "react-native-ble-plx";
 import { createMachine } from "xstate";
 import { BLEContextType } from "./BLE.Provider";
 import { useStorage } from "./Storage.Provider";
@@ -76,10 +76,18 @@ export const IOSBleProvider: React.FC<{ children: React.ReactNode, reconnectUUID
   const [state, send] = useMachine<typeof bleMachine>(bleMachine);
 
   // Storage for persisting last connected device ID
-  const [lastDeviceId, setLastDeviceId] = useStorage(ble.lastDeviceId);
+  const [lastDeviceId, setLastDeviceId, isStorageLoading] = useStorage(
+    ble.lastDeviceId,
+  );
 
   // Recover connection state on mount and handle auto-reconnect
   useEffect(() => {
+    if (isStorageLoading) return;
+
+    let disconnectSub: Subscription | null = null;
+    let connectedDisconnectSub: Subscription | null = null;
+    let isMounted = true;
+
     const recoverOrReconnect = async () => {
       try {
         // Ensure Bluetooth is powered on
@@ -94,10 +102,16 @@ export const IOSBleProvider: React.FC<{ children: React.ReactNode, reconnectUUID
           send({ type: "CONNECTED" });
           
           // Set up disconnect listener
-          device.onDisconnected((error) => {
+          const sub = device.onDisconnected((error) => {
             setPairedDevice(null);
             send({ type: "DISCONNECTED" });
           });
+          
+          if (!isMounted) {
+            sub.remove();
+          } else {
+            disconnectSub = sub;
+          }
           
           return;
         }
@@ -114,7 +128,7 @@ export const IOSBleProvider: React.FC<{ children: React.ReactNode, reconnectUUID
               const connectWithTimeout = Promise.race([
                 device.connect({ requestMTU: ble.requestMTU }),
                 new Promise<never>((_, reject) => 
-                  setTimeout(() => reject(new Error("Connection timeout")), ble.connectionTimeout)
+                  setTimeout(() => reject(new Error(`Connection timeout after ${ble.connectionTimeout / 1000} seconds`)), ble.connectionTimeout)
                 )
               ]);
               
@@ -125,10 +139,16 @@ export const IOSBleProvider: React.FC<{ children: React.ReactNode, reconnectUUID
               send({ type: "CONNECTED" });
               
               // Set up disconnect listener
-              connected.onDisconnected((error) => {
+              const sub = connected.onDisconnected((error) => {
                 setPairedDevice(null);
                 send({ type: "DISCONNECTED" });
               });
+
+              if (!isMounted) {
+                sub.remove();
+              } else {
+                connectedDisconnectSub = sub;
+              }
             }
           } catch (reconnectError) {
             // Don't show error to user - this is expected if device is off/out of range
@@ -140,7 +160,19 @@ export const IOSBleProvider: React.FC<{ children: React.ReactNode, reconnectUUID
     };
 
     recoverOrReconnect();
-  }, []); // Run once on mount
+
+    return () => {
+      isMounted = false;
+      if (disconnectSub) {
+        disconnectSub.remove();
+        disconnectSub = null;
+      }
+      if (connectedDisconnectSub) {
+        connectedDisconnectSub.remove();
+        connectedDisconnectSub = null;
+      }
+    };
+  }, [isStorageLoading, lastDeviceId, manager, reconnectUUIDs, send]); // Run when storage is ready
 
   // Clean up when unmounting
   useEffect(() => {
@@ -261,7 +293,7 @@ export const IOSBleProvider: React.FC<{ children: React.ReactNode, reconnectUUID
       const connectWithTimeout = Promise.race([
         device.connect({ requestMTU: ble.requestMTU }),
         new Promise<never>((_, reject) => 
-          setTimeout(() => reject(new Error("Connection timeout after 15 seconds")), ble.connectionTimeout)
+          setTimeout(() => reject(new Error(`Connection timeout after ${ble.connectionTimeout / 1000} seconds`)), ble.connectionTimeout)
         )
       ]);
       

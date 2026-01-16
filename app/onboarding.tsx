@@ -115,14 +115,13 @@ export default function OnboardingScreen() {
               Let's get your device set up. Make sure your Smart Knee Sleeve is
               turned on and nearby.
             </ThemedText>
-
             <View style={styles.instructionsList}>
               <View style={styles.instructionItem}>
                 <View style={[styles.instructionIcon, { backgroundColor: tintColor }]}>
                   <Ionicons name="bluetooth" size={20} color="#fff" />
                 </View>
                 <ThemedText style={styles.instructionText}>
-                  Turn on your knee sleeve but pressing the power button.
+                  Turn on your knee sleeve by pressing the power button.
                 </ThemedText>
               </View>
 
@@ -172,7 +171,9 @@ export default function OnboardingScreen() {
             headerShown: true,
             title: "",
             headerBackTitle: "Back",
-            headerStyle: { backgroundColor: styles.container.backgroundColor },
+            headerStyle: {
+              backgroundColor: StyleSheet.flatten(styles.container).backgroundColor,
+            },
             headerShadowVisible: false,
           }}
         />
