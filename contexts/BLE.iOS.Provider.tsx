@@ -82,6 +82,8 @@ export const IOSBleProvider: React.FC<{ children: React.ReactNode, reconnectUUID
   useEffect(() => {
     const recoverOrReconnect = async () => {
       try {
+        // Ensure Bluetooth is powered on
+        await ensurePoweredOn(manager);
         // First, check if device is already connected at iOS level
         // Query all connected BLE devices (generic approach)
         const connectedDevices = await manager.connectedDevices(reconnectUUIDs);
@@ -103,8 +105,6 @@ export const IOSBleProvider: React.FC<{ children: React.ReactNode, reconnectUUID
         // No active connection, try auto-reconnect if we have a stored device ID
         if (lastDeviceId) {
           try {
-            // Ensure Bluetooth is powered on
-            await ensurePoweredOn(manager);
             
             // Try to get the device by ID and connect
             const device = await manager.devices([lastDeviceId]).then(devices => devices[0]);

@@ -90,6 +90,12 @@ export default function OnboardingScreen() {
     findDevices({ serviceUUIDs: [ble.smartKneeServiceUUID] });
   }, [findDevices]);
 
+  const handleSkip = useCallback(async () => {
+    stopScan();
+    await setOnboardingComplete(true);
+    router.replace("/(tabs)");
+  }, [stopScan, setOnboardingComplete, router]);
+
   // Welcome Step
   if (step === "welcome") {
     return (
@@ -210,6 +216,18 @@ export default function OnboardingScreen() {
                 />
               )}
             </ScrollView>
+          </View>
+
+          <View style={styles.bottomActions}>
+            <Pressable
+              style={styles.secondaryButton}
+              onPress={handleSkip}
+              disabled={isConnecting}
+            >
+              <ThemedText style={styles.secondaryButtonText}>
+                Skip for Now
+              </ThemedText>
+            </Pressable>
           </View>
         </SafeAreaView>
       </ThemedView>
@@ -428,6 +446,19 @@ const createThemedStyles = () => {
       fontSize: 17,
       fontWeight: "600",
       color: "#fff",
+    },
+    secondaryButton: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+      paddingVertical: 16,
+      borderRadius: 12,
+      backgroundColor: "transparent",
+    },
+    secondaryButtonText: {
+      fontSize: 17,
+      fontWeight: "600",
+      color: textSecondaryColor,
     },
   });
 };
