@@ -76,7 +76,7 @@ export const IOSBleProvider: React.FC<{ children: React.ReactNode, reconnectUUID
   const [state, send] = useMachine<typeof bleMachine>(bleMachine);
 
   // Storage for persisting last connected device ID
-  const [lastDeviceId, setLastDeviceId] = useStorage("ble.lastDeviceId");
+  const [lastDeviceId, setLastDeviceId] = useStorage(ble.lastDeviceId);
 
   // Recover connection state on mount and handle auto-reconnect
   useEffect(() => {
@@ -112,9 +112,9 @@ export const IOSBleProvider: React.FC<{ children: React.ReactNode, reconnectUUID
             if (device) {
               // Add timeout to prevent hanging forever
               const connectWithTimeout = Promise.race([
-                device.connect({ requestMTU: 512 }),
+                device.connect({ requestMTU: ble.requestMTU }),
                 new Promise<never>((_, reject) => 
-                  setTimeout(() => reject(new Error("Connection timeout")), 10000)
+                  setTimeout(() => reject(new Error("Connection timeout")), ble.connectionTimeout)
                 )
               ]);
               
@@ -260,9 +260,9 @@ export const IOSBleProvider: React.FC<{ children: React.ReactNode, reconnectUUID
 
       // Connect to device with timeout to prevent hanging
       const connectWithTimeout = Promise.race([
-        device.connect({ requestMTU: 512 }),
+        device.connect({ requestMTU: ble.requestMTU }),
         new Promise<never>((_, reject) => 
-          setTimeout(() => reject(new Error("Connection timeout after 15 seconds")), 15000)
+          setTimeout(() => reject(new Error("Connection timeout after 15 seconds")), ble.connectionTimeout)
         )
       ]);
       

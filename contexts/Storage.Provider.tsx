@@ -1,11 +1,11 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import {
-    createContext,
-    useCallback,
-    useContext,
-    useEffect,
-    useState,
-    type ReactNode,
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useState,
+  type ReactNode,
 } from "react";
 
 // Storage schema - single source of truth for all persisted keys and their types
@@ -128,7 +128,7 @@ export function StorageProvider({ children }: { children: ReactNode }) {
 /**
  * Hook to access a specific storage value with full type safety
  * @param key - The storage key to access
- * @returns [value, setValue, isLoading] tuple
+ * @returns [value, setValue, isLoaded] tuple
  */
 export function useStorage<K extends keyof StorageSchema>(
   key: K,

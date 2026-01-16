@@ -9,6 +9,9 @@ export const ble = {
   // Characteristic UUIDs
   controlCharacteristicUUID: "40365860-3000-425d-96e9-9c4335c2178c",
   fusedDataCharacteristicUUID: "3a60dad0-2b13-49ac-be1d-4628b9a19e59",
+
+  requestMTU: 512,
+  connectionTimeout: 10000,
 } as const;
 
 // Streaming configuration
