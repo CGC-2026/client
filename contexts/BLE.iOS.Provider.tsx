@@ -129,7 +129,6 @@ export const IOSBleProvider: React.FC<{ children: React.ReactNode, reconnectUUID
                 setPairedDevice(null);
                 send({ type: "DISCONNECTED" });
               });
-            } else {
             }
           } catch (reconnectError) {
             // Don't show error to user - this is expected if device is off/out of range
