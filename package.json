@@ -11,7 +11,6 @@
     "lint": "expo lint"
   },
   "dependencies": {
-    "@brightlayer-ui/react-native-progress-icons": "^2.0.0",
     "@clerk/clerk-expo": "^2.16.1",
     "@expo/vector-icons": "^14.1.0",
     "@hookform/resolvers": "^5.2.2",

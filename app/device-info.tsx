@@ -6,12 +6,16 @@ import { useBLE } from "@/contexts/BLE.Provider";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { Stack, useRouter } from "expo-router";
 import { useEffect } from "react";
-import { Alert, Pressable, ScrollView, StyleSheet } from "react-native";
+import { Alert, Pressable, ScrollView, StyleSheet, View } from "react-native";
 
 export default function DeviceInfoScreen() {
   const { pairedDevice, disconnectDevice, isConnecting } = useBLE();
   const router = useRouter();
   const errorColor = useThemeColor({}, "error");
+  const cardColor = useThemeColor({}, "card");
+  const shadowColor = useThemeColor({}, "text");
+  const buttonTextColor = useThemeColor({}, "buttonText");
+  const backgroundColor = useThemeColor({}, "background");
 
   // Redirect if no paired device
   useEffect(() => {
@@ -54,7 +58,7 @@ export default function DeviceInfoScreen() {
           title: pairedDevice.name || "Bluetooth Device",
           headerBackTitle: "My Devices",
           headerStyle: {
-            backgroundColor: useThemeColor({}, "background"),
+            backgroundColor,
           },
           headerShadowVisible: false,
         }}
@@ -63,9 +67,14 @@ export default function DeviceInfoScreen() {
         style={styles.scrollView}
         showsVerticalScrollIndicator={false}
       >
-        <ThemedView style={styles.headerSection}>
+        <View
+          style={[
+            styles.headerSection,
+            { backgroundColor: cardColor, shadowColor },
+          ]}
+        >
           <KneeIcon size={75} />
-        </ThemedView>
+        </View>
         <ThemedView>
           <BatteryIndicator batteryLevel={80} isCharging={true} />
         </ThemedView>
@@ -79,8 +88,8 @@ export default function DeviceInfoScreen() {
         >
           <ThemedText
             style={styles.disconnectButtonText}
-            lightColor={useThemeColor({}, "buttonText")}
-            darkColor={useThemeColor({}, "buttonText")}
+            lightColor={buttonTextColor}
+            darkColor={buttonTextColor}
           >
             {isConnecting ? "Disconnecting..." : "Disconnect Device"}
           </ThemedText>
@@ -102,11 +111,9 @@ const styles = StyleSheet.create({
     width: 100,
     height: 100,
     borderRadius: 50,
-    backgroundColor: useThemeColor({}, "card"),
     alignItems: "center",
     justifyContent: "center",
     alignSelf: "center",
-    shadowColor: useThemeColor({}, "text"),
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.12,
     shadowRadius: 6,

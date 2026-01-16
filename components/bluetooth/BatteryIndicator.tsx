@@ -1,8 +1,8 @@
 import { Colors } from "@/constants/Colors";
 import { useColorScheme } from "@/hooks/useColorScheme";
 import { useThemeColor } from "@/hooks/useThemeColor";
-import { Battery } from "@brightlayer-ui/react-native-progress-icons";
 import { StyleSheet, Text, View } from "react-native";
+import BatterySvg from "./BatterySvg";
 
 interface BatteryIndicatorProps {
   batteryLevel: number; // 0-100
@@ -31,7 +31,7 @@ export default function BatteryIndicator({
     <View>
       <View style={styles.batteryContainer}>
         {/* Battery Icon */}
-        <Battery
+        <BatterySvg
           percent={batteryLevel}
           size={48}
           color={batteryColor}

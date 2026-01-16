@@ -1,24 +1,24 @@
-import { useSignIn, useSSO } from "@clerk/clerk-expo";
-import { Link, useRouter } from "expo-router";
-import { useState } from "react";
-import type { OAuthStrategy } from "@clerk/types";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import {
-  View,
-  Text,
-  Pressable,
-  ScrollView,
-  ActivityIndicator,
-} from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
 import { signInSchema, type SignInFormData } from "@/app/types/authSchemas";
-import { ControlledInput } from "@/components/ui/ControlledInput";
 import OAuthProviderButtons from "@/components/auth/OAuthProviderButtons";
+import { ControlledInput } from "@/components/ui/ControlledInput";
+import CustomKeyboardAvoidingView from "@/components/ui/CustomKeyboardAvoidingView";
 import Divider from "@/components/ui/Divider";
 import { ErrorMessage } from "@/components/ui/ErrorMessage";
-import CustomKeyboardAvoidingView from "@/components/ui/CustomKeyboardAvoidingView";
 import createAuthThemedStyles from "@/styles/auth.styles";
+import { useSignIn, useSSO } from "@clerk/clerk-expo";
+import type { OAuthStrategy } from "@clerk/types";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { Link, useRouter } from "expo-router";
+import { useState } from "react";
+import { useForm } from "react-hook-form";
+import {
+  ActivityIndicator,
+  Pressable,
+  ScrollView,
+  Text,
+  View,
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function SignInScreen() {
   const { signIn, setActive, isLoaded } = useSignIn();
@@ -95,7 +95,7 @@ export default function SignInScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <CustomKeyboardAvoidingView>
-        <ScrollView contentContainerStyle={styles.scrollView}>
+        <ScrollView>
           <View style={styles.content}>
             <Text style={styles.title}>Welcome Back</Text>
             <Text style={styles.subtitle}>Sign in to your account</Text>

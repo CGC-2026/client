@@ -1,7 +1,9 @@
 import AuthProvider from "@/contexts/Auth.Provider";
 import BLEProvider from "@/contexts/BLE.Provider";
+import { KneeDeviceProvider } from "@/contexts/KneeDevice.Provider";
 import MenuProvider from "@/contexts/Menu.Provider";
 import QueryProvider from "@/contexts/QueryClient.Provider";
+import { StorageProvider } from "@/contexts/Storage.Provider";
 import { useColorScheme } from "@/hooks/useColorScheme";
 import {
   DarkTheme,
@@ -12,6 +14,7 @@ import { useFonts } from "expo-font";
 import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import "react-native-reanimated";
+import { ble } from "@/constants/BLE";
 
 export default function RootLayout() {
   const colorScheme = useColorScheme();
@@ -27,29 +30,37 @@ export default function RootLayout() {
   return (
     <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
       <QueryProvider>
-        <AuthProvider>
-          <BLEProvider>
-            <MenuProvider>
-              <Stack>
-                <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-                <Stack.Screen
-                  name="sign-in"
-                  options={{ headerShown: false, title: "Sign In" }}
-                />
-                <Stack.Screen
-                  name="sign-up"
-                  options={{ headerShown: false, title: "Sign Up" }}
-                />
-                <Stack.Screen
-                  name="forgot-password"
-                  options={{ title: "Forgot Password" }}
-                />
-                <Stack.Screen name="+not-found" />
-              </Stack>
-              <StatusBar style="auto" />
-            </MenuProvider>
-          </BLEProvider>
-        </AuthProvider>
+        <StorageProvider>
+          <AuthProvider>
+            <BLEProvider reconnectUUIDs={[ble.smartKneeServiceUUID]}>
+              <KneeDeviceProvider>
+                <MenuProvider>
+                  <Stack>
+                  <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+                  <Stack.Screen
+                    name="sign-in"
+                    options={{ headerShown: false, title: "Sign In" }}
+                  />
+                  <Stack.Screen
+                    name="sign-up"
+                    options={{ headerShown: false, title: "Sign Up" }}
+                  />
+                  <Stack.Screen
+                    name="forgot-password"
+                    options={{ title: "Forgot Password" }}
+                  />
+                  <Stack.Screen
+                    name="onboarding"
+                    options={{ headerShown: false, gestureEnabled: false }}
+                  />
+                  <Stack.Screen name="+not-found" />
+                  </Stack>
+                  <StatusBar style="auto" />
+                </MenuProvider>
+              </KneeDeviceProvider>
+            </BLEProvider>
+          </AuthProvider>
+        </StorageProvider>
       </QueryProvider>
     </ThemeProvider>
   );
