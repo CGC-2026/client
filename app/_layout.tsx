@@ -1,3 +1,4 @@
+import { ble } from "@/constants/BLE";
 import AuthProvider from "@/contexts/Auth.Provider";
 import BLEProvider from "@/contexts/BLE.Provider";
 import { KneeDeviceProvider } from "@/contexts/KneeDevice.Provider";
@@ -14,7 +15,6 @@ import { useFonts } from "expo-font";
 import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import "react-native-reanimated";
-import { ble } from "@/constants/BLE";
 
 export default function RootLayout() {
   const colorScheme = useColorScheme();
@@ -32,7 +32,7 @@ export default function RootLayout() {
       <QueryProvider>
         <StorageProvider>
           <AuthProvider>
-            <BLEProviderreconnectUUIDs={[ble.smartKneeServiceUUID]}>
+            <BLEProvider reconnectUUIDs={[ble.smartKneeServiceUUID]}>
               <KneeDeviceProvider>
               <MenuProvider>
                 <Stack>
