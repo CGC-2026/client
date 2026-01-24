@@ -1,4 +1,4 @@
-package com.aarshshah.client
+package com.aarshshah.CGC
 import expo.modules.splashscreen.SplashScreenManager
 
 import android.os.Build
