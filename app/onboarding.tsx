@@ -13,12 +13,7 @@ import { useThemeColor } from "@/hooks/useThemeColor";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { Stack, useRouter } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
-import {
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  View
-} from "react-native";
+import { Pressable, ScrollView, StyleSheet, View } from "react-native";
 import { Device } from "react-native-ble-plx";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -117,7 +112,12 @@ export default function OnboardingScreen() {
             </ThemedText>
             <View style={styles.instructionsList}>
               <View style={styles.instructionItem}>
-                <View style={[styles.instructionIcon, { backgroundColor: tintColor }]}>
+                <View
+                  style={[
+                    styles.instructionIcon,
+                    { backgroundColor: tintColor },
+                  ]}
+                >
                   <Ionicons name="bluetooth" size={20} color="#fff" />
                 </View>
                 <ThemedText style={styles.instructionText}>
@@ -126,17 +126,27 @@ export default function OnboardingScreen() {
               </View>
 
               <View style={styles.instructionItem}>
-                <View style={[styles.instructionIcon, { backgroundColor: tintColor }]}>
+                <View
+                  style={[
+                    styles.instructionIcon,
+                    { backgroundColor: tintColor },
+                  ]}
+                >
                   <Ionicons name="power" size={20} color="#fff" />
                 </View>
                 <ThemedText style={styles.instructionText}>
-                  Turn on Bluetooth by double clicking the power button. The LED should start blinking blue.
-
+                  Turn on Bluetooth by double clicking the power button. The LED
+                  should start blinking blue.
                 </ThemedText>
               </View>
 
               <View style={styles.instructionItem}>
-                <View style={[styles.instructionIcon, { backgroundColor: tintColor }]}>
+                <View
+                  style={[
+                    styles.instructionIcon,
+                    { backgroundColor: tintColor },
+                  ]}
+                >
                   <Ionicons name="locate" size={20} color="#fff" />
                 </View>
                 <ThemedText style={styles.instructionText}>
@@ -172,7 +182,8 @@ export default function OnboardingScreen() {
             title: "",
             headerBackTitle: "Back",
             headerStyle: {
-              backgroundColor: StyleSheet.flatten(styles.container).backgroundColor,
+              backgroundColor: StyleSheet.flatten(styles.container)
+                .backgroundColor,
             },
             headerShadowVisible: false,
           }}
@@ -241,7 +252,12 @@ export default function OnboardingScreen() {
       <Stack.Screen options={{ headerShown: false }} />
       <SafeAreaView style={styles.safeArea}>
         <View style={styles.successContent}>
-          <View style={[styles.successIconContainer, { backgroundColor: successColor }]}>
+          <View
+            style={[
+              styles.successIconContainer,
+              { backgroundColor: successColor },
+            ]}
+          >
             <Ionicons name="checkmark" size={60} color="#fff" />
           </View>
 
@@ -260,7 +276,12 @@ export default function OnboardingScreen() {
                     {pairedDevice.name || "Smart Knee Sleeve"}
                   </ThemedText>
                   <View style={styles.connectedStatus}>
-                    <View style={[styles.statusDot, { backgroundColor: successColor }]} />
+                    <View
+                      style={[
+                        styles.statusDot,
+                        { backgroundColor: successColor },
+                      ]}
+                    />
                     <ThemedText style={styles.connectedStatusText}>
                       Connected
                     </ThemedText>
@@ -316,7 +337,7 @@ const createThemedStyles = () => {
       fontWeight: "700",
       textAlign: "center",
       marginBottom: 16,
-      padding: 5
+      padding: 5,
     },
     welcomeDescription: {
       fontSize: 16,
@@ -463,4 +484,3 @@ const createThemedStyles = () => {
     },
   });
 };
-

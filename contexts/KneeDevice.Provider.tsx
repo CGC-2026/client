@@ -1,9 +1,6 @@
 import { DEFAULT_SAMPLE_RATE } from "@/constants/BLE";
 import { useBLE } from "@/contexts/BLE.Provider";
-import {
-  KneeDeviceService,
-  SensorData
-} from "@/services/kneeDevice.service";
+import { KneeDeviceService, SensorData } from "@/services/kneeDevice.service";
 import React, {
   createContext,
   useContext,
@@ -47,11 +44,14 @@ export const KneeDeviceProvider: React.FC<{ children: React.ReactNode }> = ({
   const [sampleRate, setSampleRate] = useState(DEFAULT_SAMPLE_RATE);
 
   // Create service instance (memoized to prevent recreation)
-  const kneeService = useMemo(() => new KneeDeviceService(ble), [
-    ble.readCharacteristic,
-    ble.writeCharacteristic,
-    ble.subscribeToCharacteristic,
-  ]);
+  const kneeService = useMemo(
+    () => new KneeDeviceService(ble),
+    [
+      ble.readCharacteristic,
+      ble.writeCharacteristic,
+      ble.subscribeToCharacteristic,
+    ],
+  );
 
   // Subscribe to sensor data when device is paired
   useEffect(() => {
@@ -80,9 +80,13 @@ export const KneeDeviceProvider: React.FC<{ children: React.ReactNode }> = ({
     };
   }, [ble.pairedDevice?.id]);
 
-  const startStreaming = async (rate: number = sampleRate): Promise<boolean> => {
+  const startStreaming = async (
+    rate: number = sampleRate,
+  ): Promise<boolean> => {
     if (!ble.pairedDevice) {
-      console.error("[KneeDeviceContext] Cannot start streaming: no paired device");
+      console.error(
+        "[KneeDeviceContext] Cannot start streaming: no paired device",
+      );
       return false;
     }
 
@@ -96,7 +100,9 @@ export const KneeDeviceProvider: React.FC<{ children: React.ReactNode }> = ({
 
   const stopStreaming = async (): Promise<boolean> => {
     if (!ble.pairedDevice) {
-      console.error("[KneeDeviceContext] Cannot stop streaming: no paired device");
+      console.error(
+        "[KneeDeviceContext] Cannot stop streaming: no paired device",
+      );
       return false;
     }
 
@@ -151,4 +157,3 @@ export const useKneeDevice = (): KneeDeviceContextType => {
   }
   return context;
 };
-
