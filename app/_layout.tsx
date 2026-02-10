@@ -35,36 +35,35 @@ export default function RootLayout() {
           <AuthProvider>
             <CSVExportProvider>
               <BLEProvider reconnectUUIDs={[ble.smartKneeServiceUUID]}>
-                <KneeDeviceProvider>
-                  <MenuProvider>
-                    <Stack>
-                      <Stack.Screen
-                        name="(tabs)"
-                        options={{ headerShown: false }}
-                      />
-                      <Stack.Screen
-                        name="sign-in"
-                        options={{ headerShown: false, title: "Sign In" }}
-                      />
-                      <Stack.Screen
-                        name="sign-up"
-                        options={{ headerShown: false, title: "Sign Up" }}
-                      />
-                      <Stack.Screen
-                        name="forgot-password"
-                        options={{ title: "Forgot Password" }}
-                      />
-                      <Stack.Screen
-                        name="onboarding"
-                        options={{ headerShown: false, gestureEnabled: false }}
-                      />
-                      <Stack.Screen name="+not-found" />
-                    </Stack>
-                    <StatusBar style="auto" />
-                  </MenuProvider>
-                </KneeDeviceProvider>
-              </BLEProvider>
-            </CSVExportProvider>
+              <KneeDeviceProvider>
+                <MenuProvider>
+                  <Stack>
+                    <Stack.Screen
+                      name="(tabs)"
+                      options={{ headerShown: false }}
+
+                    /><Stack.Screen
+                      name="sign-in"
+                      options={{ headerShown: false, title: "Sign In" }}
+                    />
+                    <Stack.Screen
+                      name="sign-up"
+                      options={{ headerShown: false, title: "Sign Up" }}
+                    />
+                    <Stack.Screen
+                      name="forgot-password"
+                      options={{ title: "Forgot Password" }}
+                    />
+                    <Stack.Screen
+                      name="onboarding"
+                      options={{ headerShown: false, gestureEnabled: false }}
+                    />
+                    <Stack.Screen name="+not-found" />
+                  </Stack>
+                  <StatusBar style="auto" />
+                </MenuProvider>
+              </KneeDeviceProvider>
+            </BLEProvider></CSVExportProvider>
           </AuthProvider>
         </StorageProvider>
       </QueryProvider>
