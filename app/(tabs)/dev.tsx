@@ -1,9 +1,10 @@
 import { ThemedText } from "@/components/ThemedText";
 import { SAMPLE_RATES } from "@/constants/BLE";
+import { useCSVExport } from "@/contexts/CSVExport.Provider";
 import { useKneeDevice } from "@/contexts/KneeDevice.Provider";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import Ionicons from "@expo/vector-icons/Ionicons";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Pressable,
@@ -26,8 +27,17 @@ export default function DevScreen() {
     service,
   } = useKneeDevice();
 
+  const { sampleCount, addSample, exportToCSV, clearSamples } = useCSVExport();
+
   const [isLoading, setIsLoading] = useState(false);
   const [testResult, setTestResult] = useState<string>("");
+
+  // Automatically collect sensor data samples
+  useEffect(() => {
+    if (sensorData) {
+      addSample(sensorData);
+    }
+  }, [sensorData, addSample]);
 
   const tintColor = useThemeColor({}, "tint");
   const successColor = useThemeColor({}, "success");
@@ -59,6 +69,7 @@ export default function DevScreen() {
 
   const handleClearData = () => {
     clearSensorData();
+    clearSamples();
     setTestResult("");
   };
 
@@ -76,6 +87,15 @@ export default function DevScreen() {
       }
     } catch (error) {
       setTestResult(`Error: ${error}`);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleExportCSV = async () => {
+    setIsLoading(true);
+    try {
+      await exportToCSV();
     } finally {
       setIsLoading(false);
     }
@@ -231,6 +251,24 @@ export default function DevScreen() {
               <Ionicons name="flask-outline" size={20} color={tintColor} />
               <ThemedText style={[styles.testButtonText, { color: tintColor }]}>
                 Test Read Characteristic
+              </ThemedText>
+            </Pressable>
+
+            {/* Export CSV Button */}
+            <Pressable
+              style={[
+                styles.exportButton,
+                {
+                  borderColor: tintColor,
+                  opacity: sampleCount === 0 || isLoading ? 0.5 : 1,
+                },
+              ]}
+              onPress={handleExportCSV}
+              disabled={sampleCount === 0 || isLoading}
+            >
+              <Ionicons name="download-outline" size={20} color={tintColor} />
+              <ThemedText style={[styles.exportButtonText, { color: tintColor }]}>
+                Export CSV ({sampleCount} samples)
               </ThemedText>
             </Pressable>
 
@@ -507,6 +545,20 @@ const createThemedStyles = (
       marginTop: 8,
     },
     testButtonText: {
+      fontSize: 14,
+      fontWeight: "600",
+    },
+    exportButton: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+      padding: 12,
+      borderRadius: 8,
+      borderWidth: 2,
+      gap: 8,
+      marginTop: 8,
+    },
+    exportButtonText: {
       fontSize: 14,
       fontWeight: "600",
     },

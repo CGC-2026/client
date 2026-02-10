@@ -20,6 +20,8 @@ This is an [Expo](https://expo.dev) project created with [`create-expo-app`](htt
 
    ```bash
    npx expo run:ios --device
+   npx expo run:ios --device --configuration Release
+   maybe: npx expo run:ios --device --configuration Release --no-bundler
    ```
 
 In the output, you'll find options to open the app in a

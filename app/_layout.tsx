@@ -1,10 +1,12 @@
 import { ble } from "@/constants/BLE";
 import AuthProvider from "@/contexts/Auth.Provider";
 import BLEProvider from "@/contexts/BLE.Provider";
+import { CSVExportProvider } from "@/contexts/CSVExport.Provider";
 import { KneeDeviceProvider } from "@/contexts/KneeDevice.Provider";
 import MenuProvider from "@/contexts/Menu.Provider";
 import QueryProvider from "@/contexts/QueryClient.Provider";
 import { StorageProvider } from "@/contexts/Storage.Provider";
+import { WorkoutProvider } from "@/contexts/Workout.Provider";
 import { useColorScheme } from "@/hooks/useColorScheme";
 import {
   DarkTheme,
@@ -34,32 +36,51 @@ export default function RootLayout() {
           <AuthProvider>
             <BLEProvider reconnectUUIDs={[ble.smartKneeServiceUUID]}>
               <KneeDeviceProvider>
-              <MenuProvider>
-                <Stack>
-                <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-                <Stack.Screen
-                  name="sign-in"
-                  options={{ headerShown: false, title: "Sign In" }}
-                />
-                <Stack.Screen
-                  name="sign-up"
-                  options={{ headerShown: false, title: "Sign Up" }}
-                />
-                <Stack.Screen
-                  name="forgot-password"
-                  options={{ title: "Forgot Password" }}
-                />
-                <Stack.Screen
-                  name="onboarding"
-                  options={{ headerShown: false, gestureEnabled: false }}
-                />
-                <Stack.Screen name="+not-found" />
-                </Stack>
-                <StatusBar style="auto" />
-              </MenuProvider>
+                <CSVExportProvider>
+                  <WorkoutProvider>
+                    <MenuProvider>
+                    <Stack>
+                      <Stack.Screen
+                        name="(tabs)"
+                        options={{ headerShown: false }}
+                      />
+                      <Stack.Screen
+                        name="sign-in"
+                        options={{ headerShown: false, title: "Sign In" }}
+                      />
+                      <Stack.Screen
+                        name="sign-up"
+                        options={{ headerShown: false, title: "Sign Up" }}
+                      />
+                      <Stack.Screen
+                        name="forgot-password"
+                        options={{ title: "Forgot Password" }}
+                      />
+                      <Stack.Screen
+                        name="onboarding"
+                        options={{ headerShown: false, gestureEnabled: false }}
+                      />
+                      <Stack.Screen
+                        name="workout-session"
+                        options={{ headerShown: false }}
+                      />
+                      <Stack.Screen
+                        name="workout-detail"
+                        options={{ headerShown: false }}
+                      />
+                      <Stack.Screen
+                        name="workout-type-selector"
+                        options={{ headerShown: false }}
+                      />
+                      <Stack.Screen name="+not-found" />
+                    </Stack>
+                    <StatusBar style="auto" />
+                  </MenuProvider>
+                </WorkoutProvider>
+              </CSVExportProvider>
             </KneeDeviceProvider>
-            </BLEProvider>
-          </AuthProvider>
+          </BLEProvider>
+        </AuthProvider>
         </StorageProvider>
       </QueryProvider>
     </ThemeProvider>
