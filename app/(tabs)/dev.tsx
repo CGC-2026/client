@@ -36,7 +36,7 @@ export default function DevScreen() {
   const cardColor = useThemeColor({}, "card");
   const borderColor = useThemeColor({}, "border");
   const iconColor = useThemeColor({}, "icon");
-  
+
   // Now create styles AFTER all hooks
   const styles = createThemedStyles(backgroundColor, cardColor, borderColor);
 
@@ -68,7 +68,9 @@ export default function DevScreen() {
     try {
       const state = await service.readControlState();
       if (state) {
-        setTestResult(`Control State: stream=${state.stream}, rate=${state.sampleRate}Hz, mode=${state.mode}`);
+        setTestResult(
+          `Control State: stream=${state.stream}, rate=${state.sampleRate}Hz, mode=${state.mode}`,
+        );
       } else {
         setTestResult("Failed to read control state");
       }
@@ -213,7 +215,9 @@ export default function DevScreen() {
               disabled={!sensorData && !testResult}
             >
               <Ionicons name="trash-outline" size={20} color={errorColor} />
-              <ThemedText style={[styles.clearButtonText, { color: errorColor }]}>
+              <ThemedText
+                style={[styles.clearButtonText, { color: errorColor }]}
+              >
                 Clear Data
               </ThemedText>
             </Pressable>
@@ -233,7 +237,9 @@ export default function DevScreen() {
             {/* Test Result */}
             {testResult && (
               <View style={styles.testResult}>
-                <ThemedText style={styles.testResultText}>{testResult}</ThemedText>
+                <ThemedText style={styles.testResultText}>
+                  {testResult}
+                </ThemedText>
               </View>
             )}
           </View>
@@ -318,14 +324,17 @@ export default function DevScreen() {
               {/* Raw Hex Data */}
               {sensorData.rawHex && (
                 <View style={styles.dataSection}>
-                  <ThemedText style={styles.sectionTitle}>Raw Data (Hex)</ThemedText>
+                  <ThemedText style={styles.sectionTitle}>
+                    Raw Data (Hex)
+                  </ThemedText>
                   <ScrollView
                     horizontal
                     showsHorizontalScrollIndicator={true}
                     style={styles.hexScroll}
                   >
                     <ThemedText style={styles.hexText}>
-                      {sensorData.rawHex.match(/.{1,2}/g)?.join(" ") || sensorData.rawHex}
+                      {sensorData.rawHex.match(/.{1,2}/g)?.join(" ") ||
+                        sensorData.rawHex}
                     </ThemedText>
                   </ScrollView>
                 </View>
@@ -358,8 +367,11 @@ export default function DevScreen() {
   );
 }
 
-const createThemedStyles = (backgroundColor: string, cardColor: string, borderColor: string) => {
-
+const createThemedStyles = (
+  backgroundColor: string,
+  cardColor: string,
+  borderColor: string,
+) => {
   return StyleSheet.create({
     container: {
       flex: 1,
@@ -572,4 +584,3 @@ const createThemedStyles = (backgroundColor: string, cardColor: string, borderCo
     },
   });
 };
-

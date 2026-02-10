@@ -132,7 +132,11 @@ export function StorageProvider({ children }: { children: ReactNode }) {
  */
 export function useStorage<K extends keyof StorageSchema>(
   key: K,
-): [StorageSchema[K] | null, (value: StorageSchema[K]) => Promise<void>, boolean] {
+): [
+  StorageSchema[K] | null,
+  (value: StorageSchema[K]) => Promise<void>,
+  boolean,
+] {
   const context = useContext(StorageContext);
 
   if (!context) {
@@ -163,4 +167,3 @@ export function useStorageContext(): StorageContextType {
 
   return context;
 }
-

@@ -24,7 +24,10 @@ export type BLEContextType = {
    * @param options.bondingServiceUUID Service UUID to use for triggering iOS bonding (optional)
    * @returns True on success, false otherwise.
    */
-  pairDevice: (device: Device, options?: { bondingServiceUUID?: string }) => Promise<boolean>;
+  pairDevice: (
+    device: Device,
+    options?: { bondingServiceUUID?: string },
+  ) => Promise<boolean>;
   /**
    * Disconnects from the currently paired device. Returns true on success, false otherwise.
    * @returns True on success, false otherwise.
@@ -94,7 +97,11 @@ export default function BLEProvider({
   reconnectUUIDs: string[];
 }) {
   if (Platform.OS === "ios") {
-    return <IOSBleProvider reconnectUUIDs={reconnectUUIDs}>{children}</IOSBleProvider>;
+    return (
+      <IOSBleProvider reconnectUUIDs={reconnectUUIDs}>
+        {children}
+      </IOSBleProvider>
+    );
   } else {
     return <>{children}</>;
   }

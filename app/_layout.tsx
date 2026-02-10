@@ -36,24 +36,27 @@ export default function RootLayout() {
               <KneeDeviceProvider>
                 <MenuProvider>
                   <Stack>
-                  <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-                  <Stack.Screen
-                    name="sign-in"
-                    options={{ headerShown: false, title: "Sign In" }}
-                  />
-                  <Stack.Screen
-                    name="sign-up"
-                    options={{ headerShown: false, title: "Sign Up" }}
-                  />
-                  <Stack.Screen
-                    name="forgot-password"
-                    options={{ title: "Forgot Password" }}
-                  />
-                  <Stack.Screen
-                    name="onboarding"
-                    options={{ headerShown: false, gestureEnabled: false }}
-                  />
-                  <Stack.Screen name="+not-found" />
+                    <Stack.Screen
+                      name="(tabs)"
+                      options={{ headerShown: false }}
+                    />
+                    <Stack.Screen
+                      name="sign-in"
+                      options={{ headerShown: false, title: "Sign In" }}
+                    />
+                    <Stack.Screen
+                      name="sign-up"
+                      options={{ headerShown: false, title: "Sign Up" }}
+                    />
+                    <Stack.Screen
+                      name="forgot-password"
+                      options={{ title: "Forgot Password" }}
+                    />
+                    <Stack.Screen
+                      name="onboarding"
+                      options={{ headerShown: false, gestureEnabled: false }}
+                    />
+                    <Stack.Screen name="+not-found" />
                   </Stack>
                   <StatusBar style="auto" />
                 </MenuProvider>
