@@ -111,9 +111,7 @@ export function useIOSCSVExport(): CSVExportContextType {
   const context = useContext(CSVExportContext);
 
   if (!context) {
-    throw new Error(
-      "useIOSCSVExport must be used within IOSCSVExportProvider",
-    );
+    throw new Error("useIOSCSVExport must be used within IOSCSVExportProvider");
   }
 
   return context;

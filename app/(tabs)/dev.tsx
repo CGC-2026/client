@@ -267,7 +267,9 @@ export default function DevScreen() {
               disabled={sampleCount === 0 || isLoading}
             >
               <Ionicons name="download-outline" size={20} color={tintColor} />
-              <ThemedText style={[styles.exportButtonText, { color: tintColor }]}>
+              <ThemedText
+                style={[styles.exportButtonText, { color: tintColor }]}
+              >
                 Export CSV ({sampleCount} samples)
               </ThemedText>
             </Pressable>
