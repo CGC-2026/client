@@ -68,8 +68,12 @@ export default function BluetoothScreen() {
           <ScreenHeader title="Devices" subtitle="Connect to your device" />
           <ScanButton
             isScanning={isScanning}
-            onPress={isScanning ? stopScan : () => findDevices({ serviceUUIDs: [ble.smartKneeServiceUUID] })
-          }
+            onPress={
+              isScanning
+                ? stopScan
+                : () =>
+                    findDevices({ serviceUUIDs: [ble.smartKneeServiceUUID] })
+            }
             disabled={isConnecting}
           />
         </View>

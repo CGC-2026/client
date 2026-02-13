@@ -19,7 +19,8 @@ export function useProtectedRoute() {
     // Wait for both auth and storage to load
     if (!isLoaded || isStorageLoading) return;
 
-    const onAuthScreens = segments[0] === "sign-in" || segments[0] === "sign-up";
+    const onAuthScreens =
+      segments[0] === "sign-in" || segments[0] === "sign-up";
     const onOnboardingScreen = segments[0] === "onboarding";
 
     if (!isSignedIn && !onAuthScreens) {
@@ -32,7 +33,12 @@ export function useProtectedRoute() {
       } else {
         router.replace("/onboarding");
       }
-    } else if (isSignedIn && !onboardingComplete && !onOnboardingScreen && !onAuthScreens) {
+    } else if (
+      isSignedIn &&
+      !onboardingComplete &&
+      !onOnboardingScreen &&
+      !onAuthScreens
+    ) {
       // User is signed in but hasn't completed onboarding - redirect to onboarding
       router.replace("/onboarding");
     } else if (isSignedIn && onboardingComplete && onOnboardingScreen) {

@@ -48,14 +48,17 @@ export default function PasswordResetNewScreen({
         await setActive({ session: res.createdSessionId });
         next();
       } else {
-        setError("password", { message: "Failed to reset password. Please try again." });
+        setError("password", {
+          message: "Failed to reset password. Please try again.",
+        });
       }
     } catch (err: any) {
       console.error("Password reset error:", err);
       setError(
         "password",
-        err.errors?.[0]?.message ||
-          { message: "Failed to reset password. Please try again." },
+        err.errors?.[0]?.message || {
+          message: "Failed to reset password. Please try again.",
+        },
       );
     }
   };

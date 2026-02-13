@@ -11,30 +11,30 @@ export enum StreamingMode {
 
 // Parsed sensor data from the device
 export interface SensorData {
-  seq: number;          // Sequence number (uint16)
-  timestamp: number;    // Milliseconds since boot (uint32)
-  roll: number;         // Roll angle in degrees (int16 / 100)
-  pitch: number;        // Pitch angle in degrees (int16 / 100)
-  yaw: number;          // Yaw angle in degrees (int16 / 100)
-  flex: number;         // Flex sensor value 0-255 (uint8)
-  rawHex?: string;      // Raw hex string for debugging
+  seq: number; // Sequence number (uint16)
+  timestamp: number; // Milliseconds since boot (uint32)
+  roll: number; // Roll angle in degrees (int16 / 100)
+  pitch: number; // Pitch angle in degrees (int16 / 100)
+  yaw: number; // Yaw angle in degrees (int16 / 100)
+  flex: number; // Flex sensor value 0-255 (uint8)
+  rawHex?: string; // Raw hex string for debugging
 }
 
 // Control state for writing to the device
 interface ControlState {
-  stream: 0 | 1;        // 0 = stop, 1 = start
-  sampleRate: number;   // Sample rate in Hz (e.g., 50)
-  mode: StreamingMode;  // Operating mode
+  stream: 0 | 1; // 0 = stop, 1 = start
+  sampleRate: number; // Sample rate in Hz (e.g., 50)
+  mode: StreamingMode; // Operating mode
 }
 
 /**
  * KneeDeviceService - Device-specific protocol handler for Smart Knee
- * 
+ *
  * This service handles the Smart Knee BLE protocol:
  * - Encoding/decoding control commands
  * - Parsing sensor data packets
  * - Managing streaming state
- * 
+ *
  * It uses the generic BLE provider for all actual BLE operations,
  * keeping device-specific logic isolated.
  */
@@ -46,7 +46,9 @@ export class KneeDeviceService {
    * @param sampleRate Sample rate in Hz
    * @returns Promise<boolean> - True if command was sent successfully
    */
-  async startStreaming(sampleRate: number = DEFAULT_SAMPLE_RATE): Promise<boolean> {
+  async startStreaming(
+    sampleRate: number = DEFAULT_SAMPLE_RATE,
+  ): Promise<boolean> {
     const controlData = this.encodeControlState({
       stream: 1,
       sampleRate,
@@ -213,4 +215,3 @@ export class KneeDeviceService {
     return buffer.toString("base64");
   }
 }
-

@@ -1,4 +1,4 @@
-package com.aarshshah.client
+package com.aarshshah.CGC
 
 import android.app.Application
 import android.content.res.Configuration
