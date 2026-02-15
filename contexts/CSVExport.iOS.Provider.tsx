@@ -5,6 +5,7 @@ import {
   createContext,
   useCallback,
   useContext,
+  useRef,
   useState,
   type ReactNode,
 } from "react";
@@ -13,36 +14,57 @@ import { CSVExportContextType } from "./CSVExport.Provider";
 
 const CSVExportContext = createContext<CSVExportContextType | null>(null);
 
+// Stripped-down sample type for CSV export (no rawHex to save memory)
+type CSVSample = Omit<SensorData, "rawHex">;
+
+// Configuration
+const MAX_SAMPLES = 1_000_000; // Cap at 1M samples (~40MB at 120Hz = ~2.3 hours)
+const THROTTLE_UPDATE_MS = 250; // Update UI count every 250ms
+
 export function IOSCSVExportProvider({ children }: { children: ReactNode }) {
-  const [samples, setSamples] = useState<SensorData[]>([]);
+  // Use ref to avoid re-renders on every sample
+  const samplesRef = useRef<CSVSample[]>([]);
+  const lastUpdateTimeRef = useRef<number>(0);
+  
+  // Track count in state for UI updates, but throttle them
+  const [sampleCount, setSampleCount] = useState<number>(0);
 
   const addSample = useCallback((data: SensorData) => {
-    setSamples((prev) => [...prev, data]);
+    // Strip rawHex to save memory - we don't export it anyway
+    const { rawHex, ...csvData } = data;
+    
+    // Push directly to ref (no array spread, no state update)
+    samplesRef.current.push(csvData);
+    
+    // Implement ring buffer: drop oldest samples if over limit
+    if (samplesRef.current.length > MAX_SAMPLES) {
+      samplesRef.current.shift();
+    }
+    
+    // Throttle UI updates to avoid constant re-renders
+    const now = Date.now();
+    if (now - lastUpdateTimeRef.current >= THROTTLE_UPDATE_MS) {
+      lastUpdateTimeRef.current = now;
+      setSampleCount(samplesRef.current.length);
+    }
   }, []);
 
   const clearSamples = useCallback(() => {
-    setSamples([]);
+    samplesRef.current = [];
+    setSampleCount(0);
+    lastUpdateTimeRef.current = 0;
   }, []);
 
   const exportToCSV = useCallback(async () => {
-    if (samples.length === 0) {
+    // Snapshot the current samples at export time
+    const currentSamples = samplesRef.current;
+    
+    if (currentSamples.length === 0) {
       Alert.alert("No Data", "No sensor data to export");
       return;
     }
 
     try {
-      // Generate CSV header
-      const header = "timestamp,seq,roll,pitch,yaw,flex\n";
-
-      // Generate CSV rows
-      const rows = samples
-        .map((sample) => {
-          return `${sample.timestamp},${sample.seq},${sample.roll.toFixed(2)},${sample.pitch.toFixed(2)},${sample.yaw.toFixed(2)},${sample.flex}`;
-        })
-        .join("\n");
-
-      const csvContent = header + rows;
-
       // Generate filename with timestamp
       const now = new Date();
       const timestamp = now.toISOString().replace(/[:.]/g, "-").slice(0, -5);
@@ -51,6 +73,28 @@ export function IOSCSVExportProvider({ children }: { children: ReactNode }) {
       // Save to device's document directory
       const fileUri = FileSystem.documentDirectory + filename;
 
+      // Build CSV in chunks to avoid one giant string concatenation
+      const CHUNK_SIZE = 10000; // Process 10k samples at a time
+      const chunks: string[] = [];
+      
+      // Add header
+      chunks.push("timestamp,seq,roll,pitch,yaw,flex");
+
+      // Generate CSV rows in chunks
+      for (let i = 0; i < currentSamples.length; i += CHUNK_SIZE) {
+        const chunkSamples = currentSamples.slice(i, i + CHUNK_SIZE);
+        const rows = chunkSamples
+          .map((sample) => 
+            `${sample.timestamp},${sample.seq},${sample.roll.toFixed(2)},${sample.pitch.toFixed(2)},${sample.yaw.toFixed(2)},${sample.flex}`
+          )
+          .join("\n");
+        chunks.push(rows);
+      }
+
+      // Join all chunks with newlines
+      const csvContent = chunks.join("\n");
+
+      // Write to file
       await FileSystem.writeAsStringAsync(fileUri, csvContent, {
         encoding: FileSystem.EncodingType.UTF8,
       });
@@ -65,16 +109,10 @@ export function IOSCSVExportProvider({ children }: { children: ReactNode }) {
           dialogTitle: "Export Sensor Data",
           UTI: "public.comma-separated-values-text",
         });
-
-        Alert.alert(
-          "Export Successful",
-          `Exported ${samples.length} samples to ${filename}`,
-          [{ text: "OK" }],
-        );
       } else {
         Alert.alert(
           "Export Successful",
-          `File saved to:\n${fileUri}\n\n${samples.length} samples exported`,
+          `File saved to:\n${fileUri}\n\n${currentSamples.length} samples exported`,
           [{ text: "OK" }],
         );
       }
@@ -86,12 +124,12 @@ export function IOSCSVExportProvider({ children }: { children: ReactNode }) {
         [{ text: "OK" }],
       );
     }
-  }, [samples]);
+  }, []);
 
   return (
     <CSVExportContext.Provider
       value={{
-        sampleCount: samples.length,
+        sampleCount,
         addSample,
         exportToCSV,
         clearSamples,
