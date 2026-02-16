@@ -35,12 +35,7 @@ export default function RootLayout() {
         <StorageProvider>
           <AuthProvider>
             <CSVExportProvider>
-              <BLEProvider
-                reconnectUUIDs={[
-                  ble.smartKneeServiceUUID,
-                  ble.batteryServiceUUID,
-                ]}
-              >
+              <BLEProvider reconnectUUIDs={[ble.smartKneeServiceUUID]}>
                 <KneeDeviceProvider>
                   <BatteryProvider>
                     <MenuProvider>

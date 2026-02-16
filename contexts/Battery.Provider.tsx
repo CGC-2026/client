@@ -42,25 +42,52 @@ export const BatteryProvider: React.FC<{ children: React.ReactNode }> = ({
   // Subscribe to battery level notifications when device is paired
   useEffect(() => {
     let unsubscribe: (() => void) | null = null;
+    let isMounted = true;
 
     const setupBatteryMonitoring = async () => {
       if (ble.pairedDevice) {
-        // Perform initial read
-        const initialLevel = await batteryService.readBatteryLevel();
-        if (initialLevel !== null) {
-          setBatteryLevel(initialLevel);
-          setLastUpdate(Date.now());
+        try {
+          // Perform initial read
+          const initialLevel = await batteryService.readBatteryLevel();
+          if (isMounted && initialLevel !== null) {
+            setBatteryLevel(initialLevel);
+            setLastUpdate(Date.now());
+          }
+        } catch (error) {
+          console.error(
+            "[Battery] Error reading initial battery level:",
+            error,
+          );
+          // Gracefully degrade - just skip initial read, subscription may still work
         }
 
-        // Subscribe to notifications for updates
-        unsubscribe = await batteryService.subscribeToBatteryLevel(
-          (data: BatteryData | null) => {
-            if (data) {
-              setBatteryLevel(data.level);
-              setLastUpdate(data.timestamp);
-            }
-          },
-        );
+        try {
+          // Subscribe to notifications for updates
+          unsubscribe = await batteryService.subscribeToBatteryLevel(
+            (data: BatteryData | null) => {
+              if (isMounted) {
+                if (data) {
+                  setBatteryLevel(data.level);
+                  setLastUpdate(data.timestamp);
+                } else {
+                  // Clear on null data (error or disconnection)
+                  setBatteryLevel(null);
+                  setLastUpdate(null);
+                }
+              }
+            },
+          );
+        } catch (error) {
+          console.error(
+            "[Battery] Error subscribing to battery notifications:",
+            error,
+          );
+          // Clear state on subscription failure
+          if (isMounted) {
+            setBatteryLevel(null);
+            setLastUpdate(null);
+          }
+        }
       } else {
         // Clear battery data when device disconnects
         setBatteryLevel(null);
@@ -72,6 +99,7 @@ export const BatteryProvider: React.FC<{ children: React.ReactNode }> = ({
 
     // Cleanup subscription when device disconnects or component unmounts
     return () => {
+      isMounted = false;
       if (unsubscribe) {
         unsubscribe();
       }
