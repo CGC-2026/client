@@ -18,8 +18,6 @@ export interface BatteryContextType {
   lastUpdate: number | null;
   /** Whether device is charging (future enhancement, always false for now) */
   isCharging: boolean;
-  /** Access to the underlying service for advanced operations */
-  service: BatteryService;
 }
 
 const BatteryContext = createContext<BatteryContextType | null>(null);
@@ -85,7 +83,6 @@ export const BatteryProvider: React.FC<{ children: React.ReactNode }> = ({
     batteryLevel,
     lastUpdate,
     isCharging: false, // TODO Not available in standard BAS
-    service: batteryService,
   };
 
   return (
