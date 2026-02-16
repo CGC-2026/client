@@ -25,22 +25,22 @@ export function IOSCSVExportProvider({ children }: { children: ReactNode }) {
   // Use ref to avoid re-renders on every sample
   const samplesRef = useRef<CSVSample[]>([]);
   const lastUpdateTimeRef = useRef<number>(0);
-  
+
   // Track count in state for UI updates, but throttle them
   const [sampleCount, setSampleCount] = useState<number>(0);
 
   const addSample = useCallback((data: SensorData) => {
     // Strip rawHex to save memory - we don't export it anyway
     const { rawHex, ...csvData } = data;
-    
+
     // Push directly to ref (no array spread, no state update)
     samplesRef.current.push(csvData);
-    
+
     // Implement ring buffer: drop oldest samples if over limit
     if (samplesRef.current.length > MAX_SAMPLES) {
       samplesRef.current.shift();
     }
-    
+
     // Throttle UI updates to avoid constant re-renders
     const now = Date.now();
     if (now - lastUpdateTimeRef.current >= THROTTLE_UPDATE_MS) {
@@ -58,7 +58,7 @@ export function IOSCSVExportProvider({ children }: { children: ReactNode }) {
   const exportToCSV = useCallback(async () => {
     // Snapshot the current samples at export time
     const currentSamples = samplesRef.current;
-    
+
     if (currentSamples.length === 0) {
       Alert.alert("No Data", "No sensor data to export");
       return;
@@ -76,7 +76,7 @@ export function IOSCSVExportProvider({ children }: { children: ReactNode }) {
       // Build CSV in chunks to avoid one giant string concatenation
       const CHUNK_SIZE = 10000; // Process 10k samples at a time
       const chunks: string[] = [];
-      
+
       // Add header
       chunks.push("timestamp,seq,roll,pitch,yaw,flex");
 
@@ -84,8 +84,9 @@ export function IOSCSVExportProvider({ children }: { children: ReactNode }) {
       for (let i = 0; i < currentSamples.length; i += CHUNK_SIZE) {
         const chunkSamples = currentSamples.slice(i, i + CHUNK_SIZE);
         const rows = chunkSamples
-          .map((sample) => 
-            `${sample.timestamp},${sample.seq},${sample.roll.toFixed(2)},${sample.pitch.toFixed(2)},${sample.yaw.toFixed(2)},${sample.flex}`
+          .map(
+            (sample) =>
+              `${sample.timestamp},${sample.seq},${sample.roll.toFixed(2)},${sample.pitch.toFixed(2)},${sample.yaw.toFixed(2)},${sample.flex}`,
           )
           .join("\n");
         chunks.push(rows);

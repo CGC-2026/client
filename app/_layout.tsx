@@ -48,8 +48,8 @@ export default function RootLayout() {
                         <Stack.Screen
                           name="(tabs)"
                           options={{ headerShown: false }}
-
-                        /><Stack.Screen
+                        />
+                        <Stack.Screen
                           name="sign-in"
                           options={{ headerShown: false, title: "Sign In" }}
                         />
@@ -63,7 +63,10 @@ export default function RootLayout() {
                         />
                         <Stack.Screen
                           name="onboarding"
-                          options={{ headerShown: false, gestureEnabled: false }}
+                          options={{
+                            headerShown: false,
+                            gestureEnabled: false,
+                          }}
                         />
                         <Stack.Screen name="+not-found" />
                       </Stack>

@@ -49,7 +49,9 @@ export class BatteryService {
 
       // Validate range
       if (level < 0 || level > 100) {
-        console.warn(`[Battery] Invalid battery level: ${level}% (out of range)`);
+        console.warn(
+          `[Battery] Invalid battery level: ${level}% (out of range)`,
+        );
         return Math.max(0, Math.min(100, level)); // Clamp to valid range
       }
 
