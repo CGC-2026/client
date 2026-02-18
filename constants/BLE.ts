@@ -10,6 +10,10 @@ export const ble = {
   controlCharacteristicUUID: "40365860-3000-425d-96e9-9c4335c2178c",
   fusedDataCharacteristicUUID: "3a60dad0-2b13-49ac-be1d-4628b9a19e59",
 
+  // Battery Service (standard Bluetooth SIG)
+  batteryServiceUUID: "0000180F-0000-1000-8000-00805F9B34FB",
+  batteryLevelCharacteristicUUID: "00002A19-0000-1000-8000-00805F9B34FB",
+
   requestMTU: 512,
   connectionTimeout: 10000,
 } as const;

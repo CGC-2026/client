@@ -1,7 +1,8 @@
-import { ThemedText } from "@/components/ThemedText";
-import { ThemedView } from "@/components/ThemedView";
 import BatteryIndicator from "@/components/bluetooth/BatteryIndicator";
 import KneeIcon from "@/components/bluetooth/KneeIcon";
+import { ThemedText } from "@/components/ThemedText";
+import { ThemedView } from "@/components/ThemedView";
+import { useBattery } from "@/contexts/Battery.Provider";
 import { useBLE } from "@/contexts/BLE.Provider";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { Stack, useRouter } from "expo-router";
@@ -10,6 +11,7 @@ import { Alert, Pressable, ScrollView, StyleSheet, View } from "react-native";
 
 export default function DeviceInfoScreen() {
   const { pairedDevice, disconnectDevice, isConnecting } = useBLE();
+  const { batteryLevel, isCharging } = useBattery();
   const router = useRouter();
   const errorColor = useThemeColor({}, "error");
   const cardColor = useThemeColor({}, "card");
@@ -76,7 +78,10 @@ export default function DeviceInfoScreen() {
           <KneeIcon size={75} />
         </View>
         <ThemedView>
-          <BatteryIndicator batteryLevel={80} isCharging={true} />
+          <BatteryIndicator
+            batteryLevel={batteryLevel ?? 0}
+            isCharging={isCharging}
+          />
         </ThemedView>
         <Pressable
           style={({ pressed }) => [
