@@ -69,6 +69,13 @@ export const CalibrationProvider: React.FC<{ children: React.ReactNode }> = ({
       return;
     }
 
+    // Clear any existing timer and streaming from a previous run to avoid overlapping sessions
+    if (calibrationTimerRef.current) {
+      clearTimeout(calibrationTimerRef.current);
+      calibrationTimerRef.current = null;
+    }
+    await stopStreaming();
+
     setIsCalibrating(true);
     setError(null);
     calibrationSamplesRef.current = [];
@@ -146,15 +153,16 @@ export const CalibrationProvider: React.FC<{ children: React.ReactNode }> = ({
     setError(null);
   }, []);
 
-  // Clear timer on unmount or when isCalibrating turns off early
+  // Clear timer on unmount and stop streaming so the device does not keep streaming
   useEffect(() => {
     return () => {
       if (calibrationTimerRef.current) {
         clearTimeout(calibrationTimerRef.current);
         calibrationTimerRef.current = null;
+        stopStreaming();
       }
     };
-  }, []);
+  }, [stopStreaming]);
 
   const value: CalibrationContextType = {
     calibration,
