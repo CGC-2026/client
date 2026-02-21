@@ -29,7 +29,8 @@ export interface KneeDeviceContextType {
   readControlState: () => Promise<void>;
   /** Clear the current sensor data */
   clearSensorData: () => void;
-  /** Access to the underlying service for advanced operations */
+  /** TODO this should not be exposed, only done for dev page
+   * Access to the underlying service for advanced operations */
   service: KneeDeviceService;
 }
 

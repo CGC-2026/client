@@ -1,5 +1,5 @@
 import { ble } from "@/constants/BLE";
-import { ensurePoweredOn } from "@/helpers/BLE";
+import { ensurePoweredOn } from "@/lib/BLE";
 import { useMachine } from "@xstate/react";
 import {
   createContext,

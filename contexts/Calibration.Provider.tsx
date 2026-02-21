@@ -1,0 +1,181 @@
+import { mediansForRollPitchYaw } from "@/lib/math";
+import { SensorData } from "@/services/kneeDevice.service";
+import { WorkoutAPIService } from "@/services/workout.service";
+import { CreateUserCalibrationData, UserCalibrationData } from "@/types/workout.types";
+import React, {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
+import { useAuthApiClient } from "./AuthApi.Provider";
+import { useKneeDevice } from "./KneeDevice.Provider";
+
+const CALIBRATION_DURATION_MS = 4000;
+
+export interface CalibrationContextType {
+  calibration: UserCalibrationData | null;
+  isCalibrating: boolean;
+  error: string | null;
+  startCalibration: () => Promise<void>;
+  loadCalibration: () => Promise<void>;
+  clearError: () => void;
+}
+
+const CalibrationContext = createContext<CalibrationContextType | null>(null);
+
+export const CalibrationProvider: React.FC<{ children: React.ReactNode }> = ({
+  children,
+}) => {
+  const authClient = useAuthApiClient();
+  const {
+    device,
+    startStreaming,
+    stopStreaming,
+    sensorData,
+    sampleRate,
+  } = useKneeDevice();
+
+  const [calibration, setCalibration] = useState<UserCalibrationData | null>(
+    null,
+  );
+  const [isCalibrating, setIsCalibrating] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const calibrationSamplesRef = useRef<SensorData[]>([]);
+  const calibrationTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const workoutAPI = useMemo(
+    () => (authClient ? new WorkoutAPIService(authClient) : null),
+    [authClient],
+  );
+
+  // Buffer samples while calibrating
+  useEffect(() => {
+    if (!isCalibrating || !sensorData) return;
+    calibrationSamplesRef.current.push(sensorData);
+  }, [isCalibrating, sensorData]);
+
+  const startCalibration = useCallback(async () => {
+    if (!device) {
+      setError("No device connected");
+      return;
+    }
+    if (!workoutAPI) {
+      setError("Auth not ready");
+      return;
+    }
+
+    setIsCalibrating(true);
+    setError(null);
+    calibrationSamplesRef.current = [];
+
+    const success = await startStreaming(sampleRate);
+    if (!success) {
+      setIsCalibrating(false);
+      setError("Failed to start streaming");
+      return;
+    }
+
+    calibrationTimerRef.current = setTimeout(async () => {
+      calibrationTimerRef.current = null;
+      await stopStreaming();
+
+      const samples = calibrationSamplesRef.current;
+      calibrationSamplesRef.current = [];
+
+      if (samples.length < 2) {
+        setError("Not enough samples; stand still and try again");
+        setIsCalibrating(false);
+        return;
+      }
+
+      const { roll, pitch, yaw } = mediansForRollPitchYaw(
+        samples.map((s) => s.roll),
+        samples.map((s) => s.pitch),
+        samples.map((s) => s.yaw),
+      );
+
+      const calibrationData: CreateUserCalibrationData = {
+        standingYawAngle: yaw,
+        standingPitchAngle: pitch,
+        standingRollAngle: roll,
+      };
+
+      try {
+        await workoutAPI.saveCalibration(calibrationData);
+        const data = await workoutAPI.getUserCalibration();
+        if (data) {
+          setCalibration(data);
+        }
+        setError(null);
+      } catch {
+        setError("Failed to save calibration");
+      } finally {
+        setIsCalibrating(false);
+      }
+    }, CALIBRATION_DURATION_MS);
+  }, [
+    device,
+    workoutAPI,
+    startStreaming,
+    stopStreaming,
+    sampleRate,
+  ]);
+
+  const loadCalibration = useCallback(async () => {
+    if (!workoutAPI) {
+      setError("Auth not ready");
+      return;
+    }
+    setError(null);
+    try {
+      const data = await workoutAPI.getUserCalibration();
+      if (data) {
+        setCalibration(data);
+      }
+    } catch (e) {
+      setError("Failed to load calibration");
+    }
+  }, [workoutAPI]);
+
+  const clearError = useCallback(() => {
+    setError(null);
+  }, []);
+
+  // Clear timer on unmount or when isCalibrating turns off early
+  useEffect(() => {
+    return () => {
+      if (calibrationTimerRef.current) {
+        clearTimeout(calibrationTimerRef.current);
+        calibrationTimerRef.current = null;
+      }
+    };
+  }, []);
+
+  const value: CalibrationContextType = {
+    calibration,
+    isCalibrating,
+    error,
+    startCalibration,
+    loadCalibration,
+    clearError,
+  };
+
+  return (
+    <CalibrationContext.Provider value={value}>
+      {children}
+    </CalibrationContext.Provider>
+  );
+};
+
+export function useCalibration(): CalibrationContextType {
+  const context = useContext(CalibrationContext);
+  if (!context) {
+    throw new Error("useCalibration must be used within a CalibrationProvider");
+  }
+  return context;
+}

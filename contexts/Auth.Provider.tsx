@@ -44,7 +44,7 @@ export default function AuthProvider({ children }: AuthProviderProps) {
 }
 
 export function useAuth() {
-  const { isLoaded, isSignedIn, signOut } = useClerkAuth();
+  const { isLoaded, isSignedIn, signOut, getToken } = useClerkAuth();
   const { user } = useUser();
 
   return {
@@ -52,5 +52,6 @@ export function useAuth() {
     isSignedIn,
     user,
     signOut,
+    getToken,
   };
 }
