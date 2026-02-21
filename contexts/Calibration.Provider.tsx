@@ -16,12 +16,21 @@ import { useKneeDevice } from "./KneeDevice.Provider";
 
 const CALIBRATION_DURATION_MS = 4000;
 
+/**
+ * Calibration context API for standing baseline and device calibration.
+ */
 export interface CalibrationContextType {
+  /** Last loaded or saved calibration (null until fetched or first run). */
   calibration: UserCalibrationData | null;
+  /** True from start of sampling until save completes or failure. */
   isCalibrating: boolean;
+  /** User-facing error (e.g. no device, auth not ready, API failure). */
   error: string | null;
+  /** Start streaming, collect samples for a fixed duration, then save calibration via API. */
   startCalibration: () => Promise<void>;
+  /** Fetch current user calibration from API and set calibration state. */
   loadCalibration: () => Promise<void>;
+  /** Clear the current error message. */
   clearError: () => void;
 }
 
