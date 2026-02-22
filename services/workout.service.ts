@@ -3,6 +3,8 @@ import axios, { AxiosInstance } from "axios";
 
 /**
  * Workout API Service
+ * 
+ * Snake case for API levels fields
  */
 export class WorkoutAPIService {
   private readonly authClient: AxiosInstance;
@@ -31,11 +33,11 @@ export class WorkoutAPIService {
           "/api/users/me/calibration",
         );
         return {
-          userId: response.data.userId,
-          standingYawAngle: response.data.standingYawAngle,
-          standingPitchAngle: response.data.standingPitchAngle,
-          standingRollAngle: response.data.standingRollAngle,
-          updatedAt: new Date(response.data.lastUpdated)
+          userId: response.data.user_id,
+          standingYawAngle: response.data.standing_yaw_angle,
+          standingPitchAngle: response.data.standing_pitch_angle,
+          standingRollAngle: response.data.standing_roll_angle,
+          updatedAt: new Date(response.data.last_updated)
         };
     } catch (error) {
       if (axios.isAxiosError(error) && error.response?.status === 404) {
@@ -55,9 +57,9 @@ export class WorkoutAPIService {
    */
   async saveCalibration(calibration: CreateUserCalibrationData): Promise<void> {
     const body = {
-      standingYawAngle: calibration.standingYawAngle,
-      standingPitchAngle: calibration.standingPitchAngle,
-      standingRollAngle: calibration.standingRollAngle,
+      standing_yaw_angle: calibration.standingYawAngle,
+      standing_pitch_angle: calibration.standingPitchAngle,
+      standing_roll_angle: calibration.standingRollAngle,
     };
     try {
       await this.authClient.post("/api/users/me/calibration", body);
