@@ -42,6 +42,7 @@ export const CalibrationProvider: React.FC<{ children: React.ReactNode }> = ({
   const authClient = useAuthApiClient();
   const {
     device,
+    isStreaming,
     startStreaming,
     stopStreaming,
     sensorData,
@@ -78,12 +79,16 @@ export const CalibrationProvider: React.FC<{ children: React.ReactNode }> = ({
       return;
     }
 
-    // Clear any existing timer and streaming from a previous run to avoid overlapping sessions
+    // Clear any existing timer from a previous run
     if (calibrationTimerRef.current) {
       clearTimeout(calibrationTimerRef.current);
       calibrationTimerRef.current = null;
     }
-    await stopStreaming();
+
+    // Only stop streaming if we're currently streaming (avoids BLE stop-then-start when not needed)
+    if (isStreaming) {
+      await stopStreaming();
+    }
 
     setIsCalibrating(true);
     setError(null);
@@ -128,7 +133,8 @@ export const CalibrationProvider: React.FC<{ children: React.ReactNode }> = ({
           setCalibration(data);
         }
         setError(null);
-      } catch {
+      } catch (e) {
+        console.log("[Calibration] save failed:", e);
         setError("Failed to save calibration");
       } finally {
         setIsCalibrating(false);
@@ -136,6 +142,7 @@ export const CalibrationProvider: React.FC<{ children: React.ReactNode }> = ({
     }, CALIBRATION_DURATION_MS);
   }, [
     device,
+    isStreaming,
     workoutAPI,
     startStreaming,
     stopStreaming,
