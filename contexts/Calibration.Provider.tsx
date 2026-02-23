@@ -134,7 +134,12 @@ export const CalibrationProvider: React.FC<{ children: React.ReactNode }> = ({
         }
         setError(null);
       } catch (e) {
-        console.log("[Calibration] save failed:", e);
+        const err = e instanceof Error ? e : new Error(String(e));
+        console.error("[Calibration] saveCalibration failed", {
+          message: err.message,
+          stack: err.stack,
+          calibrationData: { ...calibrationData },
+        });
         setError("Failed to save calibration");
       } finally {
         setIsCalibrating(false);
@@ -161,6 +166,11 @@ export const CalibrationProvider: React.FC<{ children: React.ReactNode }> = ({
         setCalibration(data);
       }
     } catch (e) {
+      const err = e instanceof Error ? e : new Error(String(e));
+      console.error("[Calibration] loadCalibration (getUserCalibration) failed", {
+        message: err.message,
+        stack: err.stack,
+      });
       setError("Failed to load calibration");
     }
   }, [workoutAPI]);

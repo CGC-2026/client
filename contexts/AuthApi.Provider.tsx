@@ -7,7 +7,7 @@ import React, {
 } from "react";
 import { useAuth } from "./Auth.Provider";
 
-const AuthApiContext = createContext<AxiosInstance | null>(null);
+const AuthApiContext = createContext<AxiosInstance | null | undefined>(undefined);
 
 export const AuthApiProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
@@ -16,21 +16,19 @@ export const AuthApiProvider: React.FC<{ children: React.ReactNode }> = ({
 
   const authClient = useMemo(() => {
     if (!getToken) return null;
-    return createAuthApiClient(getToken as () => Promise<string | null>);
+    return createAuthApiClient(getToken);
   }, [getToken]);
 
-  const value = authClient;
-
   return (
-    <AuthApiContext.Provider value={value}>
+    <AuthApiContext.Provider value={authClient}>
       {children}
     </AuthApiContext.Provider>
   );
 };
 
-export function useAuthApiClient(): AxiosInstance {
+export function useAuthApiClient(): AxiosInstance | null {
   const context = useContext(AuthApiContext);
-  if (!context) {
+  if (context === undefined) {
     throw new Error(
       "[AuthApiProvider] useAuthApiClient must be used within an <AuthApiProvider>."
     );
