@@ -3,6 +3,7 @@ import { useBLE } from "@/contexts/BLE.Provider";
 import { KneeDeviceService, SensorData } from "@/services/kneeDevice.service";
 import React, {
   createContext,
+  useCallback,
   useContext,
   useEffect,
   useMemo,
@@ -29,7 +30,8 @@ export interface KneeDeviceContextType {
   readControlState: () => Promise<void>;
   /** Clear the current sensor data */
   clearSensorData: () => void;
-  /** Access to the underlying service for advanced operations */
+  /** TODO this should not be exposed, only done for dev page
+   * Access to the underlying service for advanced operations */
   service: KneeDeviceService;
 }
 
@@ -80,7 +82,7 @@ export const KneeDeviceProvider: React.FC<{ children: React.ReactNode }> = ({
     };
   }, [ble.pairedDevice?.id]);
 
-  const startStreaming = async (
+  const startStreaming = useCallback(async (
     rate: number = sampleRate,
   ): Promise<boolean> => {
     if (!ble.pairedDevice) {
@@ -96,9 +98,9 @@ export const KneeDeviceProvider: React.FC<{ children: React.ReactNode }> = ({
       setSampleRate(rate);
     }
     return success;
-  };
+  }, [ble.pairedDevice, kneeService, sampleRate]);
 
-  const stopStreaming = async (): Promise<boolean> => {
+  const stopStreaming = useCallback(async (): Promise<boolean> => {
     if (!ble.pairedDevice) {
       console.error(
         "[KneeDeviceContext] Cannot stop streaming: no paired device",
@@ -111,15 +113,15 @@ export const KneeDeviceProvider: React.FC<{ children: React.ReactNode }> = ({
       setIsStreaming(false);
     }
     return success;
-  };
+  }, [ble.pairedDevice, kneeService]);
 
-  const readControlState = async (): Promise<void> => {
+  const readControlState = useCallback(async (): Promise<void> => {
     const state = await kneeService.readControlState();
     if (state) {
       setIsStreaming(state.stream === 1);
       setSampleRate(state.sampleRate);
     }
-  };
+  }, [kneeService]);
 
   const clearSensorData = () => {
     setSensorData(null);
