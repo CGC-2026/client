@@ -289,6 +289,64 @@ export default function DevScreen() {
           </View>
         </View>
 
+        {/* Calibration Card */}
+        <View style={styles.card}>
+          <View style={styles.cardHeader}>
+            <Ionicons name="body-outline" size={24} color={tintColor} />
+            <ThemedText style={styles.cardTitle}>Calibration</ThemedText>
+          </View>
+          <View style={styles.cardContent}>
+            {calibrationError && (
+              <ThemedText style={[styles.calibrationError, { color: errorColor }]}>
+                {calibrationError}
+              </ThemedText>
+            )}
+            {calibration ? (
+              <View style={styles.dataSection}>
+                <View style={styles.dataRow}>
+                  <ThemedText style={styles.dataLabel}>Standing Roll:</ThemedText>
+                  <ThemedText style={styles.dataValue}>
+                    {calibration.standingRollAngle.toFixed(3)}°
+                  </ThemedText>
+                </View>
+                <View style={styles.dataRow}>
+                  <ThemedText style={styles.dataLabel}>Standing Pitch:</ThemedText>
+                  <ThemedText style={styles.dataValue}>
+                    {calibration.standingPitchAngle.toFixed(3)}°
+                  </ThemedText>
+                </View>
+                <View style={styles.dataRow}>
+                  <ThemedText style={styles.dataLabel}>Standing Yaw:</ThemedText>
+                  <ThemedText style={styles.dataValue}>
+                    {calibration.standingYawAngle.toFixed(3)}°
+                  </ThemedText>
+                </View>
+                <View style={styles.dataRow}>
+                  <ThemedText style={styles.dataLabel}>Updated:</ThemedText>
+                  <ThemedText style={styles.dataValue}>
+                    {(() => {
+                      const d = new Date(calibration.updatedAt);
+                      return isNaN(d.getTime()) ? "—" : d.toLocaleString();
+                    })()}
+                  </ThemedText>
+                </View>
+              </View>
+            ) : (
+              <ThemedText style={styles.noDevice}>No calibration loaded</ThemedText>
+            )}
+            <Pressable
+              style={[styles.testButton, { borderColor: tintColor, opacity: isCalibrating ? 0.5 : 1 }]}
+              onPress={loadCalibration}
+              disabled={isCalibrating}
+            >
+              <Ionicons name="refresh-outline" size={20} color={tintColor} />
+              <ThemedText style={[styles.testButtonText, { color: tintColor }]}>
+                Load Calibration
+              </ThemedText>
+            </Pressable>
+          </View>
+        </View>
+
         {/* Sensor Data Card */}
         {latestSample && (
           <View style={styles.card}>
@@ -639,6 +697,10 @@ const createThemedStyles = (
       opacity: 0.6,
       textAlign: "center",
       paddingHorizontal: 32,
+    },
+    calibrationError: {
+      fontSize: 13,
+      marginBottom: 12,
     },
   });
 };

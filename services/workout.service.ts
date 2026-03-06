@@ -37,7 +37,7 @@ export class WorkoutAPIService {
           standingYawAngle: response.data.standing_yaw_angle,
           standingPitchAngle: response.data.standing_pitch_angle,
           standingRollAngle: response.data.standing_roll_angle,
-          updatedAt: new Date(response.data.last_updated)
+          updatedAt: new Date(response.data.updated_at),
         };
     } catch (error) {
       if (axios.isAxiosError(error) && error.response?.status === 404) {

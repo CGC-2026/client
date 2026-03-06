@@ -1,8 +1,8 @@
 import { IconSymbol } from "@/components/ui/IconSymbol";
+import { useAuth } from "@/contexts/Auth.Provider";
 import { useBLE } from "@/contexts/BLE.Provider";
 import { useMenu } from "@/contexts/Menu.Provider";
 import { useThemeColor } from "@/hooks/useThemeColor";
-import { useAuth } from "@/contexts/Auth.Provider";
 import { useNavigation, useRouter } from "expo-router";
 import { useLayoutEffect } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
@@ -11,6 +11,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 const menuActions = [
   { id: "profile", title: "Profile", image: "person.fill" },
   { id: "settings", title: "Settings", image: "gear" },
+  { id: "calibrate", title: "Calibrate Sleeve", image: "scope" },
   { id: "signOut", title: "Sign Out", image: "eject" },
 ];
 
@@ -24,6 +25,8 @@ export default function HomeScreen() {
   const handleMenuAction = async (id: string) => {
     if (id === "profile") {
     } else if (id === "settings") {
+    } else if (id === "calibrate") {
+      router.push("/calibration");
     } else if (id === "signOut") {
       await signOut();
       router.replace("/sign-in");
