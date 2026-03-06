@@ -5,6 +5,7 @@ import {
   DEFAULT_USER_CALIBRATION_DATA,
   DEFAULT_WORKOUT_CONFIGURATION,
   Rep,
+  UserCalibrationData,
   WorkoutConfiguration,
   WorkoutSet,
 } from "@/types/workout.types";
@@ -44,7 +45,7 @@ export interface WorkoutContextType {
 
 const WorkoutContext = createContext<WorkoutContextType | null>(null);
 
-const RE_SEGMENT_EVERY_N_SAMPLES = 40;
+const RE_SEGMENT_EVERY_N_SAMPLES = 30;
 
 export const WorkoutProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
@@ -58,7 +59,7 @@ const WorkoutProviderInner: React.FC<{ apiClient: AxiosInstance; children: React
   apiClient,
   children,
 }) => {
-  const { subscribeSampleData, startStreaming, isStreaming, sampleRate } = useKneeDevice();
+  const { subscribeSampleData, startStreaming, stopStreaming, isStreaming, sampleRate } = useKneeDevice();
   const workoutAPI = useMemo(() => new WorkoutAPIService(apiClient), [apiClient]);
   const squatCoachingService = useMemo(() => new SquatCoachingService(), []);
 
@@ -74,6 +75,17 @@ const WorkoutProviderInner: React.FC<{ apiClient: AxiosInstance; children: React
   const [activeConfiguration] = useState<WorkoutConfiguration>(
     DEFAULT_WORKOUT_CONFIGURATION,
   );
+  const [userCalibration, setUserCalibration] = useState<UserCalibrationData>(
+    DEFAULT_USER_CALIBRATION_DATA,
+  );
+
+  useEffect(() => {
+    workoutAPI.getUserCalibration().then((calibration) => {
+      if (calibration) setUserCalibration(calibration);
+    }).catch((error) => {
+      console.error("[WorkoutProvider] Failed to load calibration", error);
+    });
+  }, [workoutAPI]);
 
   // Keep ref in sync so the subscriber closure always sees current value
   useEffect(() => {
@@ -104,7 +116,7 @@ const WorkoutProviderInner: React.FC<{ apiClient: AxiosInstance; children: React
     const reps = squatCoachingService.segmentSquatReps(
       currentSetSamples,
       activeConfiguration,
-      DEFAULT_USER_CALIBRATION_DATA,
+      userCalibration,
     );
     setCurrentReps(reps);
   }, [
@@ -112,6 +124,7 @@ const WorkoutProviderInner: React.FC<{ apiClient: AxiosInstance; children: React
     currentSetSamples,
     activeConfiguration,
     squatCoachingService,
+    userCalibration,
   ]);
 
   const currentRepCount = currentReps.length;
@@ -166,19 +179,11 @@ const WorkoutProviderInner: React.FC<{ apiClient: AxiosInstance; children: React
     const setSamples = [...currentSetSamples];
 
     try {
-      let calibration = DEFAULT_USER_CALIBRATION_DATA;
-
-      try {
-        calibration = (await workoutAPI.getUserCalibration()) ??
-          DEFAULT_USER_CALIBRATION_DATA;
-      } catch (error) {
-        console.error("[WorkoutProvider] Failed to load calibration for set", error);
-      }
-
+      await stopStreaming();
       const reps = squatCoachingService.segmentSquatReps(
         setSamples,
         activeConfiguration,
-        calibration,
+        userCalibration,
       );
 
       const setStartTime =
@@ -210,8 +215,9 @@ const WorkoutProviderInner: React.FC<{ apiClient: AxiosInstance; children: React
   }, [
     currentSetSamples,
     activeConfiguration,
-    workoutAPI,
+    userCalibration,
     squatCoachingService,
+    stopStreaming,
   ]);
 
   const cancelSetAndClear = useCallback(() => {
