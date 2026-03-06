@@ -1,5 +1,6 @@
 import { ThemedText } from "@/components/ThemedText";
 import { SAMPLE_RATES } from "@/constants/BLE";
+import { useCalibration } from "@/contexts/Calibration.Provider";
 import { useCSVExport } from "@/contexts/CSVExport.Provider";
 import { useKneeDevice } from "@/contexts/KneeDevice.Provider";
 import { useThemeColor } from "@/hooks/useThemeColor";
@@ -30,6 +31,13 @@ export default function DevScreen() {
   const [latestSample, setLatestSample] = useState<SensorData | null>(null);
 
   const { sampleCount, addSample, exportToCSV, clearSamples } = useCSVExport();
+  const {
+    calibration,
+    isCalibrating,
+    error: calibrationError,
+    loadCalibration,
+  } = useCalibration();
+
   const [isLoading, setIsLoading] = useState(false);
   const [testResult, setTestResult] = useState<string>("");
 
