@@ -1,9 +1,7 @@
 import { ThemedText } from "@/components/ThemedText";
 import { SAMPLE_RATES } from "@/constants/BLE";
-import { useCalibration } from "@/contexts/Calibration.Provider";
 import { useCSVExport } from "@/contexts/CSVExport.Provider";
 import { useKneeDevice } from "@/contexts/KneeDevice.Provider";
-import { useWorkoutContext } from "@/contexts/Workout.Provider";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { SensorData } from "@/services/kneeDevice.service";
 import Ionicons from "@expo/vector-icons/Ionicons";
@@ -32,24 +30,6 @@ export default function DevScreen() {
   const [latestSample, setLatestSample] = useState<SensorData | null>(null);
 
   const { sampleCount, addSample, exportToCSV, clearSamples } = useCSVExport();
-  const {
-    isSetActive,
-    startSet,
-    endSet,
-    currentRepCount,
-    currentReps,
-    completedSets,
-    cancelSetAndClear,
-  } = useWorkoutContext();
-  const {
-    calibration,
-    isCalibrating,
-    error: calibrationError,
-    startCalibration,
-    loadCalibration,
-    clearError: clearCalibrationError,
-  } = useCalibration();
-
   const [isLoading, setIsLoading] = useState(false);
   const [testResult, setTestResult] = useState<string>("");
 
@@ -95,7 +75,6 @@ export default function DevScreen() {
     setLatestSample(null);
     clearSamples();
     setTestResult("");
-    cancelSetAndClear();
   };
 
   const handleTestRead = async () => {
