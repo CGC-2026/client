@@ -27,12 +27,14 @@ export interface KneeDeviceContextType {
   setSampleRate: (rate: number) => void;
   /** Read the current control state from device */
   readControlState: () => Promise<void>;
-  /** 
-   * Subscribe to every sensor data packet. 
+  /**
+   * Subscribe to every sensor data packet.
    * Callbacks fire synchronously from the BLE notification handler.
+   * `null` is dispatched when the device disconnects so consumers can reset
+   * any state derived from sensor data (e.g. clear a displayed value).
    * Returns an unsubscribe function — call it in your effect cleanup.
    */
-  subscribeSampleData: (cb: (data: SensorData) => void) => () => void;
+  subscribeSampleData: (cb: (data: SensorData | null) => void) => () => void;
   /** TODO this should not be exposed, only done for dev page
    * Access to the underlying service for advanced operations */
   service: KneeDeviceService;
@@ -46,7 +48,7 @@ export const KneeDeviceProvider: React.FC<{ children: React.ReactNode }> = ({
   const ble = useBLE();
   const [isStreaming, setIsStreaming] = useState(false);
   const [sampleRate, setSampleRate] = useState(DEFAULT_SAMPLE_RATE);
-  const sampleListenersRef = useRef<Set<(data: SensorData) => void>>(new Set());
+  const sampleListenersRef = useRef<Set<(data: SensorData | null) => void>>(new Set());
 
   // Create service instance (memoized to prevent recreation)
   const kneeService = useMemo(
@@ -58,6 +60,16 @@ export const KneeDeviceProvider: React.FC<{ children: React.ReactNode }> = ({
     ],
   );
 
+  const notifyListeners = useCallback((data: SensorData | null) => {
+    for (const cb of sampleListenersRef.current) {
+      try {
+        cb(data);
+      } catch (e) {
+        console.error("[KneeDevice] subscribeSampleData listener threw:", e);
+      }
+    }
+  }, []);
+
   // Subscribe to sensor data when device is paired
   useEffect(() => {
     let unsubscribe: (() => void) | null = null;
@@ -66,11 +78,12 @@ export const KneeDeviceProvider: React.FC<{ children: React.ReactNode }> = ({
       if (ble.pairedDevice) {
         unsubscribe = await kneeService.subscribeToSensorData((data) => {
           if (data) {
-            sampleListenersRef.current.forEach((cb) => cb(data));
+            notifyListeners(data);
           }
         });
       } else {
         setIsStreaming(false);
+        notifyListeners(null);
       }
     };
 
@@ -82,7 +95,7 @@ export const KneeDeviceProvider: React.FC<{ children: React.ReactNode }> = ({
         unsubscribe();
       }
     };
-  }, [ble.pairedDevice?.id]);
+  }, [ble.pairedDevice?.id, notifyListeners]);
 
   const startStreaming = useCallback(async (
     rate: number = sampleRate,
@@ -126,7 +139,7 @@ export const KneeDeviceProvider: React.FC<{ children: React.ReactNode }> = ({
   }, [kneeService]);
 
   const subscribeSampleData = useCallback(
-    (cb: (data: SensorData) => void): (() => void) => {
+    (cb: (data: SensorData | null) => void): (() => void) => {
       sampleListenersRef.current.add(cb);
       return () => sampleListenersRef.current.delete(cb);
     },

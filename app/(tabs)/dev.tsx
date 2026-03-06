@@ -54,7 +54,11 @@ export default function DevScreen() {
   const [testResult, setTestResult] = useState<string>("");
 
   // Subscribe directly to BLE packets — no React render cycle in the hot path
-  useEffect(() => subscribeSampleData(addSample), [addSample, subscribeSampleData]);
+  // null (disconnect signal) is ignored; addSample only accepts SensorData
+  useEffect(
+    () => subscribeSampleData((data) => { if (data) addSample(data); }),
+    [addSample, subscribeSampleData],
+  );
 
   // Separate low-priority subscription just for the display card (drops frames, that's fine)
   useEffect(() => subscribeSampleData(setLatestSample), [subscribeSampleData]);

@@ -72,9 +72,8 @@ export const CalibrationProvider: React.FC<{ children: React.ReactNode }> = ({
   // Buffer every sample while calibrating — runs outside the React render cycle
   useEffect(() => {
     return subscribeSampleData((data) => {
-      if (isCalibratingRef.current) {
-        calibrationSamplesRef.current.push(data);
-      }
+      if (!data || !isCalibratingRef.current) return;
+      calibrationSamplesRef.current.push(data);
     });
   }, [subscribeSampleData]);
 
@@ -99,12 +98,14 @@ export const CalibrationProvider: React.FC<{ children: React.ReactNode }> = ({
       await stopStreaming();
     }
 
+    isCalibratingRef.current = true;
     setIsCalibrating(true);
     setError(null);
     calibrationSamplesRef.current = [];
 
     const success = await startStreaming(sampleRate);
     if (!success) {
+      isCalibratingRef.current = false;
       setIsCalibrating(false);
       setError("Failed to start streaming");
       return;
@@ -119,6 +120,7 @@ export const CalibrationProvider: React.FC<{ children: React.ReactNode }> = ({
 
       if (samples.length < 2) {
         setError("Not enough samples; stand still and try again");
+        isCalibratingRef.current = false;
         setIsCalibrating(false);
         return;
       }
@@ -151,6 +153,7 @@ export const CalibrationProvider: React.FC<{ children: React.ReactNode }> = ({
         });
         setError("Failed to save calibration");
       } finally {
+        isCalibratingRef.current = false;
         setIsCalibrating(false);
       }
     }, CALIBRATION_DURATION_MS);
