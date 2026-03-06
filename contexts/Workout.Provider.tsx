@@ -18,7 +18,6 @@ import {
   useRef,
   useState,
 } from "react";
-import { useAuth } from "./Auth.Provider";
 import { useAuthApiClient } from "./AuthApi.Provider";
 import { useKneeDevice } from "./KneeDevice.Provider";
 
@@ -45,7 +44,7 @@ export interface WorkoutContextType {
 
 const WorkoutContext = createContext<WorkoutContextType | null>(null);
 
-const RE_SEGMENT_EVERY_N_SAMPLES = 5; // TODO we can raise this number to save compute
+const RE_SEGMENT_EVERY_N_SAMPLES = 40;
 
 export const WorkoutProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
@@ -60,14 +59,15 @@ const WorkoutProviderInner: React.FC<{ apiClient: AxiosInstance; children: React
   children,
 }) => {
   const { subscribeSampleData, startStreaming, isStreaming, sampleRate } = useKneeDevice();
-  const { user } = useAuth();
   const workoutAPI = useMemo(() => new WorkoutAPIService(apiClient), [apiClient]);
   const squatCoachingService = useMemo(() => new SquatCoachingService(), []);
 
   const [isSessionActive] = useState(false); // Stub: always false until session API is wired
   const [isSetActive, setIsSetActive] = useState(false);
   const isSetActiveRef = useRef(false);
+  const isProcessingSetRef = useRef(false);
   const [currentSetNumber, setCurrentSetNumber] = useState(0);
+  const currentSetNumberRef = useRef(0);
   const [currentSetSamples, setCurrentSetSamples] = useState<SensorData[]>([]);
   const [currentReps, setCurrentReps] = useState<Rep[]>([]);
   const [completedSets, setCompletedSets] = useState<WorkoutSet[]>([]);
@@ -79,6 +79,10 @@ const WorkoutProviderInner: React.FC<{ apiClient: AxiosInstance; children: React
   useEffect(() => {
     isSetActiveRef.current = isSetActive;
   }, [isSetActive]);
+
+  useEffect(() => {
+    currentSetNumberRef.current = currentSetNumber;
+  }, [currentSetNumber]);
 
   // Buffer every sample during an active set
   useEffect(() => {
@@ -134,60 +138,88 @@ const WorkoutProviderInner: React.FC<{ apiClient: AxiosInstance; children: React
   }, []);
 
   const startSet = useCallback(async () => {
-    if (!isStreaming) {
-      await startStreaming(sampleRate);
+    if (isSetActiveRef.current || isProcessingSetRef.current) return;
+
+    isProcessingSetRef.current = true;
+
+    try {
+      if (!isStreaming) {
+        await startStreaming(sampleRate);
+      }
+
+      setCurrentSetSamples([]);
+      setCurrentReps([]);
+      isSetActiveRef.current = true;
+      setIsSetActive(true);
+    } finally {
+      isProcessingSetRef.current = false;
     }
-    setIsSetActive(true);
-    setCurrentSetSamples([]);
-    setCurrentReps([]);
   }, [isStreaming, sampleRate, startStreaming]);
 
   const endSet = useCallback(async () => {
-    if (!isSetActive) return;
+    if (!isSetActiveRef.current || isProcessingSetRef.current) return;
 
-    const calibration = (await workoutAPI.getUserCalibration()) ??
-          DEFAULT_USER_CALIBRATION_DATA
-
-    const reps = squatCoachingService.segmentSquatReps(
-      currentSetSamples,
-      activeConfiguration,
-      calibration,
-    );
-
-    const setStartTime =
-      currentSetSamples.length > 0
-        ? currentSetSamples[0].timestamp
-        : Date.now();
-    const setEndTime =
-      currentSetSamples.length > 0
-        ? currentSetSamples[currentSetSamples.length - 1].timestamp
-        : Date.now();
-
-    setCompletedSets((prev) => [
-      ...prev,
-      {
-        setNumber: currentSetNumber + 1,
-        startTime: setStartTime,
-        endTime: setEndTime,
-        reps,
-      },
-    ]);
-    setCurrentSetNumber((n) => n + 1);
+    isProcessingSetRef.current = true;
+    isSetActiveRef.current = false;
     setIsSetActive(false);
-    setCurrentSetSamples([]);
-    setCurrentReps([]);
+
+    const setSamples = [...currentSetSamples];
+
+    try {
+      let calibration = DEFAULT_USER_CALIBRATION_DATA;
+
+      try {
+        calibration = (await workoutAPI.getUserCalibration()) ??
+          DEFAULT_USER_CALIBRATION_DATA;
+      } catch (error) {
+        console.error("[WorkoutProvider] Failed to load calibration for set", error);
+      }
+
+      const reps = squatCoachingService.segmentSquatReps(
+        setSamples,
+        activeConfiguration,
+        calibration,
+      );
+
+      const setStartTime =
+        setSamples.length > 0
+          ? setSamples[0].timestamp
+          : Date.now();
+      const setEndTime =
+        setSamples.length > 0
+          ? setSamples[setSamples.length - 1].timestamp
+          : Date.now();
+      const nextSetNumber = currentSetNumberRef.current + 1;
+
+      currentSetNumberRef.current = nextSetNumber;
+      setCompletedSets((prev) => [
+        ...prev,
+        {
+          setNumber: nextSetNumber,
+          startTime: setStartTime,
+          endTime: setEndTime,
+          reps,
+        },
+      ]);
+      setCurrentSetNumber(nextSetNumber);
+      setCurrentSetSamples([]);
+      setCurrentReps([]);
+    } finally {
+      isProcessingSetRef.current = false;
+    }
   }, [
-    isSetActive,
     currentSetSamples,
-    currentSetNumber,
     activeConfiguration,
-    user?.id,
     workoutAPI,
     squatCoachingService,
   ]);
 
   const cancelSetAndClear = useCallback(() => {
+    isProcessingSetRef.current = false;
+    isSetActiveRef.current = false;
+    currentSetNumberRef.current = 0;
     setIsSetActive(false);
+    setCurrentSetNumber(0);
     setCurrentSetSamples([]);
     setCurrentReps([]);
     setCompletedSets([]);

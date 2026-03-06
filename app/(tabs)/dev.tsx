@@ -506,7 +506,7 @@ export default function DevScreen() {
                 <ThemedText style={styles.sectionTitle}>Completed Sets</ThemedText>
                 {completedSets.map((set) => (
                   <View
-                    key={set.setNumber}
+                    key={`set-${set.setNumber}-${set.startTime}`}
                     style={[styles.setHistoryItem, { borderColor }]}
                   >
                     <View style={styles.setHistoryHeader}>
@@ -518,7 +518,10 @@ export default function DevScreen() {
                       </ThemedText>
                     </View>
                     {set.reps.map((rep) => (
-                      <View key={rep.id} style={styles.repHistoryRow}>
+                      <View
+                        key={`set-${set.setNumber}-rep-${rep.id}-${rep.startTime}`}
+                        style={styles.repHistoryRow}
+                      >
                         <ThemedText style={styles.repHistoryIndex}>
                           #{rep.id}
                         </ThemedText>
