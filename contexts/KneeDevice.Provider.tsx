@@ -7,6 +7,7 @@ import React, {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from "react";
 import { Device } from "react-native-ble-plx";
@@ -16,8 +17,6 @@ export interface KneeDeviceContextType {
   device: Device | null;
   /** Whether streaming is currently active */
   isStreaming: boolean;
-  /** Latest sensor data packet or null */
-  sensorData: SensorData | null;
   /** Current sample rate in Hz */
   sampleRate: number;
   /** Start streaming at the specified rate */
@@ -28,8 +27,12 @@ export interface KneeDeviceContextType {
   setSampleRate: (rate: number) => void;
   /** Read the current control state from device */
   readControlState: () => Promise<void>;
-  /** Clear the current sensor data */
-  clearSensorData: () => void;
+  /** 
+   * Subscribe to every sensor data packet. 
+   * Callbacks fire synchronously from the BLE notification handler.
+   * Returns an unsubscribe function — call it in your effect cleanup.
+   */
+  subscribeSampleData: (cb: (data: SensorData) => void) => () => void;
   /** TODO this should not be exposed, only done for dev page
    * Access to the underlying service for advanced operations */
   service: KneeDeviceService;
@@ -42,8 +45,8 @@ export const KneeDeviceProvider: React.FC<{ children: React.ReactNode }> = ({
 }) => {
   const ble = useBLE();
   const [isStreaming, setIsStreaming] = useState(false);
-  const [sensorData, setSensorData] = useState<SensorData | null>(null);
   const [sampleRate, setSampleRate] = useState(DEFAULT_SAMPLE_RATE);
+  const sampleListenersRef = useRef<Set<(data: SensorData) => void>>(new Set());
 
   // Create service instance (memoized to prevent recreation)
   const kneeService = useMemo(
@@ -63,11 +66,10 @@ export const KneeDeviceProvider: React.FC<{ children: React.ReactNode }> = ({
       if (ble.pairedDevice) {
         unsubscribe = await kneeService.subscribeToSensorData((data) => {
           if (data) {
-            setSensorData(data);
+            sampleListenersRef.current.forEach((cb) => cb(data));
           }
         });
       } else {
-        setSensorData(null);
         setIsStreaming(false);
       }
     };
@@ -123,20 +125,23 @@ export const KneeDeviceProvider: React.FC<{ children: React.ReactNode }> = ({
     }
   }, [kneeService]);
 
-  const clearSensorData = () => {
-    setSensorData(null);
-  };
+  const subscribeSampleData = useCallback(
+    (cb: (data: SensorData) => void): (() => void) => {
+      sampleListenersRef.current.add(cb);
+      return () => sampleListenersRef.current.delete(cb);
+    },
+    [],
+  );
 
   const contextValue: KneeDeviceContextType = {
     device: ble.pairedDevice,
     isStreaming,
-    sensorData,
     sampleRate,
     startStreaming,
     stopStreaming,
     setSampleRate,
     readControlState,
-    clearSensorData,
+    subscribeSampleData,
     service: kneeService,
   };
 

@@ -45,8 +45,8 @@ export const CalibrationProvider: React.FC<{ children: React.ReactNode }> = ({
     isStreaming,
     startStreaming,
     stopStreaming,
-    sensorData,
     sampleRate,
+    subscribeSampleData,
   } = useKneeDevice();
 
   const [calibration, setCalibration] = useState<UserCalibrationData | null>(
@@ -57,17 +57,26 @@ export const CalibrationProvider: React.FC<{ children: React.ReactNode }> = ({
 
   const calibrationSamplesRef = useRef<SensorData[]>([]);
   const calibrationTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const isCalibratingRef = useRef(false);
 
   const workoutAPI = useMemo(
     () => (authClient ? new WorkoutAPIService(authClient) : null),
     [authClient],
   );
 
-  // Buffer samples while calibrating
+  // Keep ref in sync so the subscriber closure always sees current value
   useEffect(() => {
-    if (!isCalibrating || !sensorData) return;
-    calibrationSamplesRef.current.push(sensorData);
-  }, [isCalibrating, sensorData]);
+    isCalibratingRef.current = isCalibrating;
+  }, [isCalibrating]);
+
+  // Buffer every sample while calibrating — runs outside the React render cycle
+  useEffect(() => {
+    return subscribeSampleData((data) => {
+      if (isCalibratingRef.current) {
+        calibrationSamplesRef.current.push(data);
+      }
+    });
+  }, [subscribeSampleData]);
 
   const startCalibration = useCallback(async () => {
     if (!device) {
