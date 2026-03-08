@@ -45,8 +45,8 @@ export const CalibrationProvider: React.FC<{ children: React.ReactNode }> = ({
     isStreaming,
     startStreaming,
     stopStreaming,
-    sensorData,
     sampleRate,
+    subscribeSampleData,
   } = useKneeDevice();
 
   const [calibration, setCalibration] = useState<UserCalibrationData | null>(
@@ -57,17 +57,25 @@ export const CalibrationProvider: React.FC<{ children: React.ReactNode }> = ({
 
   const calibrationSamplesRef = useRef<SensorData[]>([]);
   const calibrationTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const isCalibratingRef = useRef(false);
 
   const workoutAPI = useMemo(
     () => (authClient ? new WorkoutAPIService(authClient) : null),
     [authClient],
   );
 
-  // Buffer samples while calibrating
+  // Keep ref in sync so the subscriber closure always sees current value
   useEffect(() => {
-    if (!isCalibrating || !sensorData) return;
-    calibrationSamplesRef.current.push(sensorData);
-  }, [isCalibrating, sensorData]);
+    isCalibratingRef.current = isCalibrating;
+  }, [isCalibrating]);
+
+  // Buffer every sample while calibrating — runs outside the React render cycle
+  useEffect(() => {
+    return subscribeSampleData((data) => {
+      if (!data || !isCalibratingRef.current) return;
+      calibrationSamplesRef.current.push(data);
+    });
+  }, [subscribeSampleData]);
 
   const startCalibration = useCallback(async () => {
     if (!device) {
@@ -90,12 +98,14 @@ export const CalibrationProvider: React.FC<{ children: React.ReactNode }> = ({
       await stopStreaming();
     }
 
+    isCalibratingRef.current = true;
     setIsCalibrating(true);
     setError(null);
     calibrationSamplesRef.current = [];
 
     const success = await startStreaming(sampleRate);
     if (!success) {
+      isCalibratingRef.current = false;
       setIsCalibrating(false);
       setError("Failed to start streaming");
       return;
@@ -110,6 +120,7 @@ export const CalibrationProvider: React.FC<{ children: React.ReactNode }> = ({
 
       if (samples.length < 2) {
         setError("Not enough samples; stand still and try again");
+        isCalibratingRef.current = false;
         setIsCalibrating(false);
         return;
       }
@@ -142,6 +153,7 @@ export const CalibrationProvider: React.FC<{ children: React.ReactNode }> = ({
         });
         setError("Failed to save calibration");
       } finally {
+        isCalibratingRef.current = false;
         setIsCalibrating(false);
       }
     }, CALIBRATION_DURATION_MS);

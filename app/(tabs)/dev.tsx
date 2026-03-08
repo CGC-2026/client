@@ -3,6 +3,7 @@ import { SAMPLE_RATES } from "@/constants/BLE";
 import { useCSVExport } from "@/contexts/CSVExport.Provider";
 import { useKneeDevice } from "@/contexts/KneeDevice.Provider";
 import { useThemeColor } from "@/hooks/useThemeColor";
+import { SensorData } from "@/services/kneeDevice.service";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { useEffect, useState } from "react";
 import {
@@ -18,26 +19,29 @@ export default function DevScreen() {
   const {
     device,
     isStreaming,
-    sensorData,
     sampleRate,
     startStreaming,
     stopStreaming,
     setSampleRate,
-    clearSensorData,
+    subscribeSampleData,
     service,
   } = useKneeDevice();
 
-  const { sampleCount, addSample, exportToCSV, clearSamples } = useCSVExport();
+  const [latestSample, setLatestSample] = useState<SensorData | null>(null);
 
+  const { sampleCount, addSample, exportToCSV, clearSamples } = useCSVExport();
   const [isLoading, setIsLoading] = useState(false);
   const [testResult, setTestResult] = useState<string>("");
 
-  // Automatically collect sensor data samples
-  useEffect(() => {
-    if (sensorData) {
-      addSample(sensorData);
-    }
-  }, [sensorData, addSample]);
+  // Subscribe directly to BLE packets — no React render cycle in the hot path
+  // null (disconnect signal) is ignored; addSample only accepts SensorData
+  useEffect(
+    () => subscribeSampleData((data) => { if (data) addSample(data); }),
+    [addSample, subscribeSampleData],
+  );
+
+  // Separate low-priority subscription just for the display card (drops frames, that's fine)
+  useEffect(() => subscribeSampleData(setLatestSample), [subscribeSampleData]);
 
   const tintColor = useThemeColor({}, "tint");
   const successColor = useThemeColor({}, "success");
@@ -68,7 +72,7 @@ export default function DevScreen() {
   };
 
   const handleClearData = () => {
-    clearSensorData();
+    setLatestSample(null);
     clearSamples();
     setTestResult("");
   };
@@ -232,7 +236,7 @@ export default function DevScreen() {
             <Pressable
               style={[styles.clearButton, { borderColor: errorColor }]}
               onPress={handleClearData}
-              disabled={!sensorData && !testResult}
+              disabled={!latestSample && !testResult}
             >
               <Ionicons name="trash-outline" size={20} color={errorColor} />
               <ThemedText
@@ -286,7 +290,7 @@ export default function DevScreen() {
         </View>
 
         {/* Sensor Data Card */}
-        {sensorData && (
+        {latestSample && (
           <View style={styles.card}>
             <View style={styles.cardHeader}>
               <Ionicons name="analytics-outline" size={24} color={tintColor} />
@@ -299,19 +303,19 @@ export default function DevScreen() {
                 <View style={styles.dataRow}>
                   <ThemedText style={styles.dataLabel}>Sequence:</ThemedText>
                   <ThemedText style={styles.dataValue}>
-                    {sensorData.seq}
+                    {latestSample.seq}
                   </ThemedText>
                 </View>
                 <View style={styles.dataRow}>
                   <ThemedText style={styles.dataLabel}>Timestamp:</ThemedText>
                   <ThemedText style={styles.dataValue}>
-                    {formatTimestamp(sensorData.timestamp)}
+                    {formatTimestamp(latestSample.timestamp)}
                   </ThemedText>
                 </View>
                 <View style={styles.dataRow}>
                   <ThemedText style={styles.dataLabel}>Raw (ms):</ThemedText>
                   <ThemedText style={styles.dataValue}>
-                    {sensorData.timestamp}
+                    {latestSample.timestamp}
                   </ThemedText>
                 </View>
               </View>
@@ -322,19 +326,19 @@ export default function DevScreen() {
                 <View style={styles.dataRow}>
                   <ThemedText style={styles.dataLabel}>Roll:</ThemedText>
                   <ThemedText style={styles.dataValue}>
-                    {sensorData.roll.toFixed(2)}°
+                    {latestSample.roll.toFixed(2)}°
                   </ThemedText>
                 </View>
                 <View style={styles.dataRow}>
                   <ThemedText style={styles.dataLabel}>Pitch:</ThemedText>
                   <ThemedText style={styles.dataValue}>
-                    {sensorData.pitch.toFixed(2)}°
+                    {latestSample.pitch.toFixed(2)}°
                   </ThemedText>
                 </View>
                 <View style={styles.dataRow}>
                   <ThemedText style={styles.dataLabel}>Yaw:</ThemedText>
                   <ThemedText style={styles.dataValue}>
-                    {sensorData.yaw.toFixed(2)}°
+                    {latestSample.yaw.toFixed(2)}°
                   </ThemedText>
                 </View>
               </View>
@@ -345,7 +349,7 @@ export default function DevScreen() {
                 <View style={styles.dataRow}>
                   <ThemedText style={styles.dataLabel}>Value:</ThemedText>
                   <ThemedText style={styles.dataValue}>
-                    {sensorData.flex}
+                    {latestSample.flex}
                   </ThemedText>
                 </View>
                 <View style={styles.flexBar}>
@@ -353,7 +357,7 @@ export default function DevScreen() {
                     style={[
                       styles.flexFill,
                       {
-                        width: `${(sensorData.flex / 255) * 100}%`,
+                        width: `${(latestSample.flex / 255) * 100}%`,
                         backgroundColor: tintColor,
                       },
                     ]}
@@ -362,7 +366,7 @@ export default function DevScreen() {
               </View>
 
               {/* Raw Hex Data */}
-              {sensorData.rawHex && (
+              {latestSample.rawHex && (
                 <View style={styles.dataSection}>
                   <ThemedText style={styles.sectionTitle}>
                     Raw Data (Hex)
@@ -373,8 +377,8 @@ export default function DevScreen() {
                     style={styles.hexScroll}
                   >
                     <ThemedText style={styles.hexText}>
-                      {sensorData.rawHex.match(/.{1,2}/g)?.join(" ") ||
-                        sensorData.rawHex}
+                      {latestSample.rawHex!.match(/.{1,2}/g)?.join(" ") ||
+                        latestSample.rawHex}
                     </ThemedText>
                   </ScrollView>
                 </View>
@@ -384,7 +388,7 @@ export default function DevScreen() {
         )}
 
         {/* No Data Placeholder */}
-        {!sensorData && (
+        {!latestSample && (
           <View style={styles.card}>
             <View style={styles.emptyState}>
               <Ionicons
