@@ -9,6 +9,7 @@ import { KneeDeviceProvider } from "@/contexts/KneeDevice.Provider";
 import MenuProvider from "@/contexts/Menu.Provider";
 import QueryProvider from "@/contexts/QueryClient.Provider";
 import { StorageProvider } from "@/contexts/Storage.Provider";
+import { WorkoutProvider } from "@/contexts/Workout.Provider";
 import { useColorScheme } from "@/hooks/useColorScheme";
 import {
   DarkTheme,
@@ -42,6 +43,7 @@ export default function RootLayout() {
                   <KneeDeviceProvider>
                     <CalibrationProvider>
                       <BatteryProvider>
+                        <WorkoutProvider>
                           <MenuProvider>
                             <Stack>
                               <Stack.Screen
@@ -79,6 +81,7 @@ export default function RootLayout() {
                             </Stack>
                             <StatusBar style="auto" />
                           </MenuProvider>
+                        </WorkoutProvider>
                       </BatteryProvider>
                     </CalibrationProvider>
                   </KneeDeviceProvider>
