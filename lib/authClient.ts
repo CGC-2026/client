@@ -1,4 +1,4 @@
-import { API_BASE } from "@/constants/api";
+import { env } from "@/constants/env";
 import axios, { AxiosInstance } from "axios";
 
 /**
@@ -12,7 +12,7 @@ export function createAuthApiClient(
   getToken: () => Promise<string | null>,
 ): AxiosInstance {
   const instance = axios.create({
-    baseURL: API_BASE,
+    baseURL: env.API_URL,
     timeout: 15_000,
     headers: {
       "Content-Type": "application/json",

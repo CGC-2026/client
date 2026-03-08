@@ -89,11 +89,11 @@ export default function DevScreen() {
     setSampleRate(rate);
   };
 
-  const handleClearData = () => {
+  const handleClearData = async () => {
     setLatestSample(null);
     clearSamples();
     setTestResult("");
-    cancelSetAndClear();
+    await cancelSetAndClear();
   };
 
   const handleTestRead = async () => {

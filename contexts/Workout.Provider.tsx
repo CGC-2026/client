@@ -40,7 +40,7 @@ export interface WorkoutContextType {
   activeConfiguration: WorkoutConfiguration;
   /** TODO remove after? 
    * Cancel current set without saving and clear completed sets (e.g. for dev reset) */
-  cancelSetAndClear: () => void;
+  cancelSetAndClear: () => Promise<void>;
 }
 
 const WorkoutContext = createContext<WorkoutContextType | null>(null);
@@ -220,16 +220,22 @@ const WorkoutProviderInner: React.FC<{ apiClient: AxiosInstance; children: React
     stopStreaming,
   ]);
 
-  const cancelSetAndClear = useCallback(() => {
-    isProcessingSetRef.current = false;
+  const cancelSetAndClear = useCallback(async () => {
     isSetActiveRef.current = false;
-    currentSetNumberRef.current = 0;
-    setIsSetActive(false);
-    setCurrentSetNumber(0);
-    setCurrentSetSamples([]);
-    setCurrentReps([]);
-    setCompletedSets([]);
-  }, []);
+    try {
+      if (isStreaming) {
+        await stopStreaming();
+      }
+    } finally {
+      isProcessingSetRef.current = false;
+      currentSetNumberRef.current = 0;
+      setIsSetActive(false);
+      setCurrentSetNumber(0);
+      setCurrentSetSamples([]);
+      setCurrentReps([]);
+      setCompletedSets([]);
+    }
+  }, [isStreaming, stopStreaming]);
 
   const contextValue: WorkoutContextType = {
     isSessionActive,
