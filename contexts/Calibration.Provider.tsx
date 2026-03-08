@@ -1,5 +1,5 @@
 import { mediansForRollPitchYaw } from "@/lib/math";
-import { SensorData } from "@/services/kneeDevice.service";
+import type { SensorData } from "@/types/sensor.types";
 import { WorkoutAPIService } from "@/services/workout.service";
 import { CreateUserCalibrationData, UserCalibrationData } from "@/types/workout.types";
 import React, {

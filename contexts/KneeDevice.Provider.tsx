@@ -1,6 +1,7 @@
 import { DEFAULT_SAMPLE_RATE } from "@/constants/BLE";
 import { useBLE } from "@/contexts/BLE.Provider";
-import { KneeDeviceService, SensorData } from "@/services/kneeDevice.service";
+import { KneeDeviceService } from "@/services/kneeDevice.service";
+import type { SensorData } from "@/types/sensor.types";
 import React, {
   createContext,
   useCallback,

@@ -1,23 +1,15 @@
 import { ble, DEFAULT_SAMPLE_RATE } from "@/constants/BLE";
 import { BLEContextType } from "@/contexts/BLE.Provider";
 import { Buffer } from "buffer";
+import type { SensorData } from "@/types/sensor.types";
+
+export type { SensorData };
 
 // Streaming modes for the Smart Knee device
 export enum StreamingMode {
   IDLE = 0,
   STREAM = 1,
   FLASH_DUMP = 2,
-}
-
-// Parsed sensor data from the device
-export interface SensorData {
-  seq: number; // Sequence number (uint16)
-  timestamp: number; // Milliseconds since boot (uint32)
-  roll: number; // Roll angle in degrees (int16 / 100)
-  pitch: number; // Pitch angle in degrees (int16 / 100)
-  yaw: number; // Yaw angle in degrees (int16 / 100)
-  flex: number; // Flex sensor value 0-255 (uint8)
-  rawHex?: string; // Raw hex string for debugging
 }
 
 // Control state for writing to the device

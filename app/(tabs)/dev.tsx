@@ -3,8 +3,9 @@ import { SAMPLE_RATES } from "@/constants/BLE";
 import { useCalibration } from "@/contexts/Calibration.Provider";
 import { useCSVExport } from "@/contexts/CSVExport.Provider";
 import { useKneeDevice } from "@/contexts/KneeDevice.Provider";
+import { useWorkoutContext } from "@/contexts/Workout.Provider";
 import { useThemeColor } from "@/hooks/useThemeColor";
-import { SensorData } from "@/services/kneeDevice.service";
+import type { SensorData } from "@/types/sensor.types";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { useEffect, useState } from "react";
 import {
@@ -31,6 +32,15 @@ export default function DevScreen() {
   const [latestSample, setLatestSample] = useState<SensorData | null>(null);
 
   const { sampleCount, addSample, exportToCSV, clearSamples } = useCSVExport();
+  const {
+    isSetActive,
+    startSet,
+    endSet,
+    currentRepCount,
+    lastRep,
+    completedSets,
+    cancelSetAndClear,
+  } = useWorkoutContext();
   const {
     calibration,
     isCalibrating,
@@ -79,10 +89,11 @@ export default function DevScreen() {
     setSampleRate(rate);
   };
 
-  const handleClearData = () => {
+  const handleClearData = async () => {
     setLatestSample(null);
     clearSamples();
     setTestResult("");
+    await cancelSetAndClear();
   };
 
   const handleTestRead = async () => {
@@ -352,6 +363,185 @@ export default function DevScreen() {
                 Load Calibration
               </ThemedText>
             </Pressable>
+          </View>
+        </View>
+
+        {/* Rep Tracking Card */}
+        <View style={styles.card}>
+          <View style={styles.cardHeader}>
+            <Ionicons name="fitness-outline" size={24} color={tintColor} />
+            <ThemedText style={styles.cardTitle}>Rep Tracking</ThemedText>
+          </View>
+          <View style={styles.cardContent}>
+            {/* Start / End Set */}
+            <Pressable
+              style={[
+                styles.setButton,
+                {
+                  backgroundColor: isSetActive ? errorColor : successColor,
+                  opacity: !device ? 0.5 : 1,
+                },
+              ]}
+              onPress={isSetActive ? endSet : startSet}
+              disabled={!device}
+            >
+              <Ionicons
+                name={isSetActive ? "stop-circle-outline" : "play-circle-outline"}
+                size={24}
+                color="#fff"
+              />
+              <ThemedText style={styles.setButtonText}>
+                {isSetActive ? "End Set" : "Start Set"}
+              </ThemedText>
+            </Pressable>
+
+            {!device && (
+              <ThemedText style={[styles.repHint, { color: errorColor }]}>
+                Connect a device before starting a set
+              </ThemedText>
+            )}
+
+            {/* Live Rep Count */}
+            {isSetActive && (
+              <View style={styles.repCountBox}>
+                <ThemedText style={[styles.repCountNumber, { color: tintColor }]}>
+                  {currentRepCount}
+                </ThemedText>
+                <ThemedText style={styles.repCountLabel}>
+                  {currentRepCount === 1 ? "rep" : "reps"} detected
+                </ThemedText>
+              </View>
+            )}
+
+            {/* Last Rep Metrics */}
+            {lastRep && (
+              <View style={[styles.dataSection, { marginTop: 16 }]}>
+                <ThemedText style={styles.sectionTitle}>
+                  Last Rep #{lastRep.id}
+                </ThemedText>
+                <View style={styles.dataRow}>
+                  <ThemedText style={styles.dataLabel}>Duration:</ThemedText>
+                  <ThemedText style={styles.dataValue}>
+                    {lastRep.metrics.durationMs}ms
+                  </ThemedText>
+                </View>
+                <View style={styles.dataRow}>
+                  <ThemedText style={styles.dataLabel}>Down / Up:</ThemedText>
+                  <ThemedText style={styles.dataValue}>
+                    {lastRep.metrics.downMs}ms / {lastRep.metrics.upMs}ms
+                  </ThemedText>
+                </View>
+                <View style={styles.dataRow}>
+                  <ThemedText style={styles.dataLabel}>Depth:</ThemedText>
+                  <ThemedText style={styles.dataValue}>
+                    {lastRep.metrics.rollRomDeg.toFixed(1)}°
+                  </ThemedText>
+                </View>
+                <View style={styles.dataRow}>
+                  <ThemedText style={styles.dataLabel}>ROM:</ThemedText>
+                  <ThemedText style={styles.dataValue}>
+                    {lastRep.metrics.romDeg.toFixed(1)}°
+                  </ThemedText>
+                </View>
+                <View style={styles.dataRow}>
+                  <ThemedText style={styles.dataLabel}>Tempo ratio:</ThemedText>
+                  <ThemedText style={styles.dataValue}>
+                    {lastRep.metrics.tempoRatio.toFixed(2)}
+                  </ThemedText>
+                </View>
+                <View style={styles.dataRow}>
+                  <ThemedText style={styles.dataLabel}>Pause at bottom:</ThemedText>
+                  <ThemedText style={styles.dataValue}>
+                    {lastRep.metrics.pauseMs}ms
+                  </ThemedText>
+                </View>
+                <View style={styles.dataRow}>
+                  <ThemedText style={styles.dataLabel}>Roll max / min:</ThemedText>
+                  <ThemedText style={styles.dataValue}>
+                    {lastRep.metrics.maxRollDeg.toFixed(1)}° / {lastRep.metrics.minRollDeg.toFixed(1)}°
+                  </ThemedText>
+                </View>
+                <View style={styles.dataRow}>
+                  <ThemedText style={styles.dataLabel}>Pitch max / min:</ThemedText>
+                  <ThemedText style={styles.dataValue}>
+                    {lastRep.metrics.maxPitchDeg.toFixed(1)}° / {lastRep.metrics.minPitchDeg.toFixed(1)}°
+                  </ThemedText>
+                </View>
+                <View style={styles.dataRow}>
+                  <ThemedText style={styles.dataLabel}>Pitch ROM:</ThemedText>
+                  <ThemedText style={styles.dataValue}>
+                    {lastRep.metrics.pitchRomDeg.toFixed(1)}°
+                  </ThemedText>
+                </View>
+                <View style={styles.dataRow}>
+                  <ThemedText style={styles.dataLabel}>Peak valgus:</ThemedText>
+                  <ThemedText style={styles.dataValue}>
+                    {lastRep.metrics.peakValgus.toFixed(1)}°
+                  </ThemedText>
+                </View>
+                <View style={styles.dataRow}>
+                  <ThemedText style={styles.dataLabel}>Yaw max / min:</ThemedText>
+                  <ThemedText style={styles.dataValue}>
+                    {lastRep.metrics.maxYawDeg.toFixed(1)}° / {lastRep.metrics.minYawDeg.toFixed(1)}°
+                  </ThemedText>
+                </View>
+                <View style={styles.dataRow}>
+                  <ThemedText style={styles.dataLabel}>Yaw ROM:</ThemedText>
+                  <ThemedText style={styles.dataValue}>
+                    {lastRep.metrics.yawRomDeg.toFixed(1)}°
+                  </ThemedText>
+                </View>
+                <View style={styles.dataRow}>
+                  <ThemedText style={styles.dataLabel}>Peak hip rotation:</ThemedText>
+                  <ThemedText style={styles.dataValue}>
+                    {lastRep.metrics.peakHipRotation.toFixed(1)}°
+                  </ThemedText>
+                </View>
+              </View>
+            )}
+
+            {/* Completed Sets History */}
+            {completedSets.length > 0 && (
+              <View style={[styles.dataSection, { marginTop: 8 }]}>
+                <ThemedText style={styles.sectionTitle}>Completed Sets</ThemedText>
+                {completedSets.map((set) => (
+                  <View
+                    key={`set-${set.setNumber}-${set.startTime}`}
+                    style={[styles.setHistoryItem, { borderColor }]}
+                  >
+                    <View style={styles.setHistoryHeader}>
+                      <ThemedText style={styles.setHistoryTitle}>
+                        Set {set.setNumber}
+                      </ThemedText>
+                      <ThemedText style={[styles.setHistoryBadge, { backgroundColor: tintColor }]}>
+                        {set.reps.length} {set.reps.length === 1 ? "rep" : "reps"}
+                      </ThemedText>
+                    </View>
+                    {set.reps.map((rep) => (
+                      <View
+                        key={`set-${set.setNumber}-rep-${rep.id}-${rep.startTime}`}
+                        style={styles.repHistoryRow}
+                      >
+                        <ThemedText style={styles.repHistoryIndex}>
+                          #{rep.id}
+                        </ThemedText>
+                        <View style={styles.repHistoryDetails}>
+                          <ThemedText style={styles.repHistoryDetail}>
+                            {rep.metrics.durationMs}ms · depth {rep.metrics.rollRomDeg.toFixed(1)}°
+                          </ThemedText>
+                          <ThemedText style={styles.repHistoryDetail}>
+                            valgus {rep.metrics.peakValgus.toFixed(1)}° · hip rot {rep.metrics.peakHipRotation.toFixed(1)}°
+                          </ThemedText>
+                          <ThemedText style={styles.repHistoryDetail}>
+                            tempo {rep.metrics.tempoRatio.toFixed(2)}x
+                          </ThemedText>
+                        </View>
+                      </View>
+                    ))}
+                  </View>
+                ))}
+              </View>
+            )}
           </View>
         </View>
 
@@ -709,6 +899,87 @@ const createThemedStyles = (
     calibrationError: {
       fontSize: 13,
       marginBottom: 12,
+    },
+    setButton: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+      padding: 16,
+      borderRadius: 8,
+      gap: 8,
+      marginBottom: 8,
+    },
+    setButtonText: {
+      color: "#fff",
+      fontSize: 16,
+      fontWeight: "600",
+    },
+    repHint: {
+      fontSize: 12,
+      textAlign: "center",
+      marginBottom: 8,
+      opacity: 0.8,
+    },
+    repCountBox: {
+      alignItems: "center",
+      paddingVertical: 20,
+    },
+    repCountNumber: {
+      fontSize: 72,
+      fontWeight: "800",
+      lineHeight: 80,
+    },
+    repCountLabel: {
+      fontSize: 16,
+      opacity: 0.6,
+      marginTop: 4,
+    },
+    setHistoryItem: {
+      borderWidth: 1,
+      borderRadius: 8,
+      padding: 12,
+      marginBottom: 8,
+    },
+    setHistoryHeader: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      marginBottom: 8,
+    },
+    setHistoryTitle: {
+      fontSize: 15,
+      fontWeight: "600",
+    },
+    setHistoryBadge: {
+      fontSize: 12,
+      fontWeight: "700",
+      color: "#fff",
+      paddingHorizontal: 8,
+      paddingVertical: 3,
+      borderRadius: 12,
+    },
+    repHistoryRow: {
+      flexDirection: "row",
+      alignItems: "flex-start",
+      paddingVertical: 4,
+      gap: 8,
+    },
+    repHistoryIndex: {
+      fontSize: 12,
+      opacity: 0.5,
+      width: 28,
+      paddingTop: 1,
+    },
+    repHistoryDetails: {
+      flex: 1,
+      gap: 2,
+    },
+    repHistoryDetail: {
+      fontSize: 13,
+      fontFamily: "SpaceMono",
+      opacity: 0.85,
+      flexShrink: 1,
+      lineHeight: 18,
     },
   });
 };
