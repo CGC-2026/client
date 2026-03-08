@@ -11,6 +11,7 @@ import React, {
   useRef,
   useState,
 } from "react";
+import { useAuth } from "./Auth.Provider";
 import { useAuthApiClient } from "./AuthApi.Provider";
 import { useKneeDevice } from "./KneeDevice.Provider";
 
@@ -39,6 +40,7 @@ const CalibrationContext = createContext<CalibrationContextType | null>(null);
 export const CalibrationProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
+  const { user } = useAuth();
   const authClient = useAuthApiClient();
   const {
     device,
@@ -68,6 +70,21 @@ export const CalibrationProvider: React.FC<{ children: React.ReactNode }> = ({
   useEffect(() => {
     isCalibratingRef.current = isCalibrating;
   }, [isCalibrating]);
+
+  // Clear all calibration state when the authenticated user changes (sign-out or user switch).
+  // user?.id goes to undefined on sign-out and to a new value on a different sign-in,
+  // so this single dependency covers both cases without needing to track isSignedIn separately.
+  useEffect(() => {
+    if (calibrationTimerRef.current) {
+      clearTimeout(calibrationTimerRef.current);
+      calibrationTimerRef.current = null;
+    }
+    isCalibratingRef.current = false;
+    calibrationSamplesRef.current = [];
+    setCalibration(null);
+    setIsCalibrating(false);
+    setError(null);
+  }, [user?.id]);
 
   // Buffer every sample while calibrating — runs outside the React render cycle
   useEffect(() => {
