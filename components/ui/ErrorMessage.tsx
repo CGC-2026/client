@@ -1,15 +1,15 @@
-import React from "react";
-import { View, Text, StyleSheet } from "react-native";
 import { useThemeColor } from "@/hooks/useThemeColor";
+import React from "react";
+import { StyleSheet, Text, View } from "react-native";
 
 interface ErrorMessageProps {
   message: string | undefined;
 }
 
 export const ErrorMessage: React.FC<ErrorMessageProps> = ({ message }) => {
-  if (!message) return null;
-
   const errorColor = useThemeColor({}, "error");
+
+  if (!message) return null;
 
   return (
     <View style={styles.errorContainer}>

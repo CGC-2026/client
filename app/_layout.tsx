@@ -67,6 +67,14 @@ export default function RootLayout() {
                                   gestureEnabled: false,
                                 }}
                               />
+                              <Stack.Screen
+                                name="calibration"
+                                options={{
+                                  title: "Calibrate Sleeve",
+                                  presentation: "modal",
+                                  headerShown: false,
+                                }}
+                              />
                               <Stack.Screen name="+not-found" />
                             </Stack>
                             <StatusBar style="auto" />
