@@ -1,4 +1,4 @@
-import { SensorData } from "@/services/kneeDevice.service";
+import type { SensorData } from "@/types/sensor.types";
 import * as FileSystem from "expo-file-system";
 import * as Sharing from "expo-sharing";
 import {

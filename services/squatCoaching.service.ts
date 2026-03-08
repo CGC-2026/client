@@ -8,7 +8,7 @@ import {
   UserCalibrationData,
   WorkoutConfiguration,
 } from "@/types/workout.types";
-import { SensorData } from "./kneeDevice.service";
+import type { SensorData } from "@/types/sensor.types";
 
 export class SquatCoachingService {
   segmentSquatReps(

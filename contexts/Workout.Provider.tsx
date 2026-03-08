@@ -1,6 +1,6 @@
-import { SensorData } from "@/services/kneeDevice.service";
 import { SquatCoachingService } from "@/services/squatCoaching.service";
 import { WorkoutAPIService } from "@/services/workout.service";
+import type { SensorData } from "@/types/sensor.types";
 import {
   DEFAULT_USER_CALIBRATION_DATA,
   DEFAULT_WORKOUT_CONFIGURATION,
@@ -38,6 +38,8 @@ export interface WorkoutContextType {
   startNewSession: (workoutId: number) => Promise<void>;
   endSession: () => Promise<void>;
   activeConfiguration: WorkoutConfiguration;
+  /** null when no error; set when startSet fails (e.g. no paired device) */
+  setError: string | null;
   /** TODO remove after? 
    * Cancel current set without saving and clear completed sets (e.g. for dev reset) */
   cancelSetAndClear: () => Promise<void>;
@@ -75,6 +77,7 @@ const WorkoutProviderInner: React.FC<{ apiClient: AxiosInstance; children: React
   const [activeConfiguration] = useState<WorkoutConfiguration>(
     DEFAULT_WORKOUT_CONFIGURATION,
   );
+  const [setError, setSetError] = useState<string | null>(null);
   const [userCalibration, setUserCalibration] = useState<UserCalibrationData>(
     DEFAULT_USER_CALIBRATION_DATA,
   );
@@ -154,10 +157,13 @@ const WorkoutProviderInner: React.FC<{ apiClient: AxiosInstance; children: React
     if (isSetActiveRef.current || isProcessingSetRef.current) return;
 
     isProcessingSetRef.current = true;
+    setSetError(null);
 
     try {
-      if (!isStreaming) {
-        await startStreaming(sampleRate);
+      const ok = isStreaming || await startStreaming(sampleRate);
+      if (!ok) {
+        setSetError("Cannot start set: no paired device.");
+        return;
       }
 
       setCurrentSetSamples([]);
@@ -251,6 +257,7 @@ const WorkoutProviderInner: React.FC<{ apiClient: AxiosInstance; children: React
     currentReps,
     lastRep,
     activeConfiguration,
+    setError,
   };
 
   return (

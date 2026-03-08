@@ -1,4 +1,4 @@
-import { SensorData } from "@/services/kneeDevice.service";
+import type { SensorData } from "@/types/sensor.types";
 
 export interface UserCalibrationData {
   userId: string;

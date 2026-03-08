@@ -5,7 +5,7 @@ import { useCSVExport } from "@/contexts/CSVExport.Provider";
 import { useKneeDevice } from "@/contexts/KneeDevice.Provider";
 import { useWorkoutContext } from "@/contexts/Workout.Provider";
 import { useThemeColor } from "@/hooks/useThemeColor";
-import { SensorData } from "@/services/kneeDevice.service";
+import type { SensorData } from "@/types/sensor.types";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { useEffect, useState } from "react";
 import {
