@@ -2,12 +2,12 @@ import { SquatCoachingService } from "@/services/squatCoaching.service";
 import { WorkoutAPIService } from "@/services/workout.service";
 import type { SensorData } from "@/types/sensor.types";
 import {
+  ActiveWorkoutSet,
   DEFAULT_USER_CALIBRATION_DATA,
   DEFAULT_WORKOUT_CONFIGURATION,
   Rep,
   UserCalibrationData,
   WorkoutConfiguration,
-  WorkoutSet,
 } from "@/types/workout.types";
 import { AxiosInstance } from "axios";
 import {
@@ -28,7 +28,7 @@ export interface WorkoutContextType {
   currentSetNumber: number;
   startSet: () => Promise<void>;
   endSet: () => Promise<void>;
-  completedSets: WorkoutSet[];
+  completedSets: ActiveWorkoutSet[];
   // Real-time during active set
   currentRepCount: number;
   currentReps: Rep[];
@@ -73,7 +73,7 @@ const WorkoutProviderInner: React.FC<{ apiClient: AxiosInstance; children: React
   const currentSetNumberRef = useRef(0);
   const [currentSetSamples, setCurrentSetSamples] = useState<SensorData[]>([]);
   const [currentReps, setCurrentReps] = useState<Rep[]>([]);
-  const [completedSets, setCompletedSets] = useState<WorkoutSet[]>([]);
+  const [completedSets, setCompletedSets] = useState<ActiveWorkoutSet[]>([]);
   const [activeConfiguration] = useState<WorkoutConfiguration>(
     DEFAULT_WORKOUT_CONFIGURATION,
   );

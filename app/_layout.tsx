@@ -10,6 +10,7 @@ import MenuProvider from "@/contexts/Menu.Provider";
 import QueryProvider from "@/contexts/QueryClient.Provider";
 import { StorageProvider } from "@/contexts/Storage.Provider";
 import { WorkoutProvider } from "@/contexts/Workout.Provider";
+import { WorkoutAPIProvider } from "@/contexts/WorkoutAPI.Provider";
 import { useColorScheme } from "@/hooks/useColorScheme";
 import {
   DarkTheme,
@@ -38,55 +39,65 @@ export default function RootLayout() {
         <StorageProvider>
           <AuthProvider>
             <AuthApiProvider>
-              <CSVExportProvider>
-                <BLEProvider reconnectUUIDs={[ble.smartKneeServiceUUID]}>
-                  <KneeDeviceProvider>
-                    <CalibrationProvider>
-                      <BatteryProvider>
-                        <WorkoutProvider>
-                          <MenuProvider>
-                            <Stack>
-                              <Stack.Screen
-                                name="(tabs)"
-                                options={{ headerShown: false }}
-                              />
-                              <Stack.Screen
-                                name="sign-in"
-                                options={{ headerShown: false, title: "Sign In" }}
-                              />
-                              <Stack.Screen
-                                name="sign-up"
-                                options={{ headerShown: false, title: "Sign Up" }}
-                              />
-                              <Stack.Screen
-                                name="forgot-password"
-                                options={{ title: "Forgot Password" }}
-                              />
-                              <Stack.Screen
-                                name="onboarding"
-                                options={{
-                                  headerShown: false,
-                                  gestureEnabled: false,
-                                }}
-                              />
-                              <Stack.Screen
-                                name="calibration"
-                                options={{
-                                  title: "Calibrate Sleeve",
-                                  presentation: "modal",
-                                  headerShown: false,
-                                }}
-                              />
-                              <Stack.Screen name="+not-found" />
-                            </Stack>
-                            <StatusBar style="auto" />
-                          </MenuProvider>
-                        </WorkoutProvider>
-                      </BatteryProvider>
-                    </CalibrationProvider>
-                  </KneeDeviceProvider>
-                </BLEProvider>
-              </CSVExportProvider>
+              <WorkoutAPIProvider>
+                <CSVExportProvider>
+                  <BLEProvider reconnectUUIDs={[ble.smartKneeServiceUUID]}>
+                    <KneeDeviceProvider>
+                      <CalibrationProvider>
+                        <BatteryProvider>
+                          <WorkoutProvider>
+                            <MenuProvider>
+                              <Stack>
+                                <Stack.Screen
+                                  name="(tabs)"
+                                  options={{ headerShown: false }}
+                                />
+                                <Stack.Screen
+                                  name="sign-in"
+                                  options={{ headerShown: false, title: "Sign In" }}
+                                />
+                                <Stack.Screen
+                                  name="sign-up"
+                                  options={{ headerShown: false, title: "Sign Up" }}
+                                />
+                                <Stack.Screen
+                                  name="forgot-password"
+                                  options={{ title: "Forgot Password" }}
+                                />
+                                <Stack.Screen
+                                  name="onboarding"
+                                  options={{
+                                    headerShown: false,
+                                    gestureEnabled: false,
+                                  }}
+                                />
+                                <Stack.Screen
+                                  name="calibration"
+                                  options={{
+                                    title: "Calibrate Sleeve",
+                                    presentation: "modal",
+                                    headerShown: false,
+                                  }}
+                                />
+                                <Stack.Screen
+                                  name="workout/[id]"
+                                  options={{ title: "" }}
+                                />
+                                <Stack.Screen
+                                  name="session/[id]"
+                                  options={{ title: "" }}
+                                />
+                                <Stack.Screen name="+not-found" />
+                              </Stack>
+                              <StatusBar style="auto" />
+                            </MenuProvider>
+                          </WorkoutProvider>
+                        </BatteryProvider>
+                      </CalibrationProvider>
+                    </KneeDeviceProvider>
+                  </BLEProvider>
+                </CSVExportProvider>
+              </WorkoutAPIProvider>
             </AuthApiProvider>
           </AuthProvider>
         </StorageProvider>

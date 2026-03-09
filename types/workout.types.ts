@@ -75,9 +75,48 @@ export interface Rep {
   };
 }
 
-export interface WorkoutSet {
+/** In-memory set shape used during a live workout session (timestamps are epoch ms numbers) */
+export interface ActiveWorkoutSet {
   setNumber: number;
   startTime: number;
   endTime: number;
   reps: Rep[];
+}
+
+/** API response shape for a persisted set */
+export interface SessionSet {
+  id: string;
+  sessionId: string;
+  setNumber: number;
+  startTime: Date;
+  endTime: Date;
+  reps: Rep[];
+}
+
+export interface WorkoutSession {
+  id: string;
+  workoutTypeId: string;
+  userId: string;
+  startTime: Date;
+  endTime?: Date;
+  sets: SessionSet[];
+}
+
+export interface CreateSessionDTO {
+  workoutTypeId: string;
+  userId: string;
+  startTime: Date;
+}
+
+export interface SaveSetDTO {
+  sessionId: string;
+  setNumber: number;
+  startTime: Date;
+  endTime: Date;
+  reps: Rep[];
+}
+
+export interface EndSessionDTO {
+  sessionId: string;
+  endTime: Date;
 }
