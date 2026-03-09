@@ -111,7 +111,7 @@ const createThemedStyles = () => {
 
   const tintPressed = useThemeColor({ light: "#005EC2", dark: "#4A80EE" }, "tint");
 
-  return StyleSheet.create({
+  return {
     headerBackground: backgroundColor,
     notFoundText: {
       fontSize: 17,
@@ -144,9 +144,9 @@ const createThemedStyles = () => {
       gap: 8,
     },
     gateNotice: {
-      flexDirection: "row",
-      alignItems: "center",
-      justifyContent: "center",
+      flexDirection: "row" as const,
+      alignItems: "center" as const,
+      justifyContent: "center" as const,
       gap: 6,
     },
     gateNoticeColor: textSecondary,
@@ -158,9 +158,9 @@ const createThemedStyles = () => {
       backgroundColor: tintColor,
       borderRadius: 14,
       paddingVertical: 16,
-      flexDirection: "row",
-      alignItems: "center",
-      justifyContent: "center",
+      flexDirection: "row" as const,
+      alignItems: "center" as const,
+      justifyContent: "center" as const,
     },
     startButtonPressed: {
       backgroundColor: tintPressed,
@@ -172,14 +172,14 @@ const createThemedStyles = () => {
     },
     startButtonText: {
       fontSize: 17,
-      fontWeight: "600",
+      fontWeight: "600" as const,
       color: "#FFFFFF",
     },
     startButtonTextDisabled: {
       color: textSecondary,
     },
     startButtonIconDisabledColor: textSecondary,
-  });
+  };
 };
 
 const styles = StyleSheet.create({
