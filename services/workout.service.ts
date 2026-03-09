@@ -1,4 +1,4 @@
-import { CreateUserCalibrationData, UserCalibrationData, WorkoutSession, WorkoutType } from "@/types/workout.types";
+import { CreateSessionDTO, CreateUserCalibrationData, EndSessionDTO, SaveSetDTO, UserCalibrationData, WorkoutSession, WorkoutType } from "@/types/workout.types";
 import axios, { AxiosInstance } from "axios";
 
 /**
@@ -74,15 +74,17 @@ export class WorkoutAPIService {
     }
   }
 
-  async createSession(data: any): Promise<any> {
+  async createSession(data: CreateSessionDTO): Promise<{ id: string } | undefined> {
     // TODO: Replace with actual API call
+    // Returns the created session with its server-assigned ID
+    return undefined;
   }
 
-  async saveSet(data: any): Promise<void> {
+  async saveSet(data: SaveSetDTO): Promise<void> {
     // TODO: Replace with actual post API call
   }
 
-  async endSession(data: any): Promise<void> {
+  async endSession(data: EndSessionDTO): Promise<void> {
     // TODO: Replace with actual patch API call
   }
 

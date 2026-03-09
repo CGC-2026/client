@@ -7,7 +7,7 @@ import { useAuth } from "@/contexts/Auth.Provider";
 import { useBLE } from "@/contexts/BLE.Provider";
 import { useMenu } from "@/contexts/Menu.Provider";
 import { useThemeColor } from "@/hooks/useThemeColor";
-import { useWorkoutTypes } from "@/hooks/useWorkoutTypes";
+import { useWorkoutTypes } from "@/hooks/useWorkoutQueries";
 import { WorkoutType } from "@/types/workout.types";
 import { FlashList } from "@shopify/flash-list";
 import { useNavigation, useRouter } from "expo-router";

@@ -1,18 +1,22 @@
-import WorkoutConfigCard from "@/components/workout/WorkoutConfigCard";
 import { ThemedView } from "@/components/ThemedView";
 import { useBLE } from "@/contexts/BLE.Provider";
-import { useWorkoutTypes } from "@/hooks/useWorkoutTypes";
+import { useWorkoutContext } from "@/contexts/Workout.Provider";
 import { useThemeColor } from "@/hooks/useThemeColor";
+import { useWorkoutTypes } from "@/hooks/useWorkoutQueries";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
-import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { useCallback, useState } from "react";
+import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-native";
 
 export default function WorkoutDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { data: workoutTypes } = useWorkoutTypes();
   const { pairedDevice } = useBLE();
+  const { startNewSession } = useWorkoutContext();
   const router = useRouter();
   const themedStyles = createThemedStyles();
+
+  const [isStarting, setIsStarting] = useState(false);
 
   const workoutType = workoutTypes?.find((w) => w.id === id);
 
@@ -27,9 +31,19 @@ export default function WorkoutDetailScreen() {
     );
   }
 
-  const handleStartWorkout = () => {
-    // TODO: wire up session start when API is implemented
-  };
+  const handleStartWorkout = useCallback(async () => {
+    if (isStarting) return;
+    setIsStarting(true);
+    try {
+      await startNewSession(workoutType.id);
+      router.push({
+        pathname: "/active-workout",
+        params: { workoutTypeId: workoutType.id, workoutTypeName: workoutType.name },
+      });
+    } finally {
+      setIsStarting(false);
+    }
+  }, [isStarting, startNewSession, workoutType, router]);
 
   return (
     <ThemedView style={styles.container}>
@@ -41,10 +55,7 @@ export default function WorkoutDetailScreen() {
           headerShadowVisible: false,
         }}
       />
-      <ScrollView
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-      >
+      <View style={styles.content}>
         {workoutType.description ? (
           <View style={themedStyles.descriptionCard}>
             <Text style={themedStyles.description}>
@@ -52,11 +63,7 @@ export default function WorkoutDetailScreen() {
             </Text>
           </View>
         ) : null}
-
-        <View style={styles.configSection}>
-          <WorkoutConfigCard configuration={workoutType.configuration} />
-        </View>
-      </ScrollView>
+      </View>
 
       <View style={themedStyles.footer}>
         {!pairedDevice ? (
@@ -78,21 +85,25 @@ export default function WorkoutDetailScreen() {
             pressed && pairedDevice ? themedStyles.startButtonPressed : {},
           ]}
           onPress={handleStartWorkout}
-          disabled={!pairedDevice}
+          disabled={!pairedDevice || isStarting}
         >
-          <Ionicons
-            name="play-circle"
-            size={20}
-            color={pairedDevice ? "#FFFFFF" : themedStyles.startButtonIconDisabledColor}
-            style={styles.startButtonIcon}
-          />
+          {isStarting ? (
+            <ActivityIndicator size="small" color="#FFFFFF" style={styles.startButtonIcon} />
+          ) : (
+            <Ionicons
+              name="play-circle"
+              size={20}
+              color={pairedDevice ? "#FFFFFF" : themedStyles.startButtonIconDisabledColor}
+              style={styles.startButtonIcon}
+            />
+          )}
           <Text
             style={[
               themedStyles.startButtonText,
               !pairedDevice ? themedStyles.startButtonTextDisabled : {},
             ]}
           >
-            Start Workout
+            {isStarting ? "Starting…" : "Start Workout"}
           </Text>
         </Pressable>
       </View>
@@ -191,13 +202,9 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  scrollContent: {
+  content: {
+    flex: 1,
     paddingTop: 24,
-    paddingBottom: 16,
-    gap: 0,
-  },
-  configSection: {
-    marginTop: 0,
   },
   startButtonIcon: {
     marginRight: 8,

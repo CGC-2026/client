@@ -84,6 +84,10 @@ export default function RootLayout() {
                                   options={{ title: "" }}
                                 />
                                 <Stack.Screen
+                                  name="active-workout"
+                                  options={{ headerShown: false }}
+                                />
+                                <Stack.Screen
                                   name="session/[id]"
                                   options={{ title: "" }}
                                 />

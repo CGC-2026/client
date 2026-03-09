@@ -8,3 +8,12 @@ export function useWorkoutTypes() {
     queryFn: () => api.getWorkoutTypes(),
   });
 }
+
+export function useSessionHistory(userId: string) {
+  const api = useWorkoutAPI();
+  return useQuery({
+    queryKey: ["sessionHistory", userId],
+    queryFn: () => api.getSessionHistory(userId),
+    enabled: !!userId,
+  });
+}
