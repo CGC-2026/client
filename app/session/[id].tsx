@@ -4,7 +4,7 @@ import { ThemedView } from "@/components/ThemedView";
 import { useAuth } from "@/contexts/Auth.Provider";
 import { useSessionHistory, useWorkoutTypes } from "@/hooks/useWorkoutQueries";
 import { useThemeColor } from "@/hooks/useThemeColor";
-import { Rep, SessionSet } from "@/types/workout.types";
+import { Rep, WorkoutSessionSet } from "@/types/workout.types";
 import { Stack, useLocalSearchParams } from "expo-router";
 import { useCallback, useState } from "react";
 import { FlatList, StyleSheet, Text, View } from "react-native";
@@ -62,7 +62,7 @@ export default function SessionDetailScreen() {
   }, []);
 
   const renderSet = useCallback(
-    ({ item }: { item: SessionSet }) => (
+    ({ item }: { item: WorkoutSessionSet }) => (
       <SetAccordionItem set={item} onRepPress={handleRepPress} />
     ),
     [handleRepPress],

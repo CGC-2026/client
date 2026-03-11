@@ -4,7 +4,7 @@ import { WorkoutAPIService } from "@/services/workout.service";
 import type { SensorData } from "@/types/sensor.types";
 import {
   ActiveWorkoutSet,
-  CreateSessionDTO,
+  CreateWorkoutSessionDTO,
   DEFAULT_USER_CALIBRATION_DATA,
   DEFAULT_WORKOUT_CONFIGURATION,
   EndSessionDTO,
@@ -149,9 +149,8 @@ const WorkoutProviderInner: React.FC<{ apiClient: AxiosInstance; children: React
   }, [currentReps, completedSets]);
 
   const startNewSession = useCallback(async (workoutTypeId: string) => {
-    const dto: CreateSessionDTO = {
+    const dto: CreateWorkoutSessionDTO = {
       workoutTypeId,
-      userId: user?.id ?? "",
       startTime: new Date(),
     };
 

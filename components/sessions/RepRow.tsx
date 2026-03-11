@@ -17,8 +17,13 @@ export default function RepRow({ rep, repNumber, onPress }: RepRowProps) {
   const iconColor = useThemeColor({}, "icon");
   const tintColor = useThemeColor({}, "tint");
 
-  const durationSec = (rep.metrics.durationMs / 1000).toFixed(1);
-  const rom = rep.metrics.romDeg.toFixed(1);
+  const hasDuration = Number.isFinite(rep.metrics?.durationMs);
+  const hasRom = Number.isFinite(rep.metrics?.romDeg);
+
+  const durationSec = hasDuration
+    ? ((rep.metrics!.durationMs ?? 0) / 1000).toFixed(1)
+    : "—";
+  const rom = hasRom ? (rep.metrics!.romDeg ?? 0).toFixed(1) : "—";
 
   return (
     <Pressable

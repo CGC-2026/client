@@ -1,12 +1,12 @@
 import { useThemeColor } from "@/hooks/useThemeColor";
-import { Rep, SessionSet } from "@/types/workout.types";
+import { Rep, WorkoutSessionSet } from "@/types/workout.types";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import RepRow from "./RepRow";
 
 type SetAccordionItemProps = {
-  set: SessionSet;
+  set: WorkoutSessionSet;
   onRepPress: (rep: Rep, repNumber: number) => void;
 };
 
@@ -69,7 +69,7 @@ export default function SetAccordionItem({
         <View style={[styles.repsContainer, { borderTopColor: borderColor }]}>
           {set.reps.map((rep, index) => (
             <RepRow
-              key={rep.id}
+              key={`${set.id}-${rep.repNumber}-${index}`}
               rep={rep}
               repNumber={index + 1}
               onPress={(r) => onRepPress(r, index + 1)}

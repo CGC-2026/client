@@ -22,7 +22,7 @@ export interface WorkoutType {
   id: string;
   name: string; // "Squats", "Running", etc.
   description?: string;
-  configuration: WorkoutConfiguration;
+  config: WorkoutConfiguration;
 }
 
 export interface WorkoutConfiguration {
@@ -46,7 +46,7 @@ export const DEFAULT_WORKOUT_CONFIGURATION: WorkoutConfiguration = {
 };
 
 export interface Rep {
-  id: number;
+  repNumber: number;
   startTime: number;
   endTime: number;
   samples: SensorData[];
@@ -84,7 +84,7 @@ export interface ActiveWorkoutSet {
 }
 
 /** API response shape for a persisted set */
-export interface SessionSet {
+export interface WorkoutSessionSet {
   id: string;
   sessionId: string;
   setNumber: number;
@@ -99,12 +99,11 @@ export interface WorkoutSession {
   userId: string;
   startTime: Date;
   endTime?: Date;
-  sets: SessionSet[];
+  sets: WorkoutSessionSet[];
 }
 
-export interface CreateSessionDTO {
+export interface CreateWorkoutSessionDTO {
   workoutTypeId: string;
-  userId: string;
   startTime: Date;
 }
 

@@ -21,45 +21,66 @@ type MetricSection = {
   items: MetricItem[];
 };
 
+function formatNumber(value: number | undefined, digits: number): string {
+  if (!Number.isFinite(value)) {
+    return "—";
+  }
+  return (value as number).toFixed(digits);
+}
+
 function buildSections(rep: Rep): MetricSection[] {
-  const { metrics } = rep;
+  const metrics = rep.metrics ?? ({} as Rep["metrics"]);
   return [
     {
       title: "Timing",
       items: [
-        { label: "Total Duration", value: `${metrics.durationMs} ms` },
-        { label: "Down Phase", value: `${metrics.downMs} ms` },
-        { label: "Up Phase", value: `${metrics.upMs} ms` },
-        { label: "Pause at Bottom", value: `${metrics.pauseMs} ms` },
+        {
+          label: "Total Duration",
+          value: Number.isFinite(metrics.durationMs)
+            ? `${metrics.durationMs} ms`
+            : "—",
+        },
+        {
+          label: "Down Phase",
+          value: Number.isFinite(metrics.downMs) ? `${metrics.downMs} ms` : "—",
+        },
+        {
+          label: "Up Phase",
+          value: Number.isFinite(metrics.upMs) ? `${metrics.upMs} ms` : "—",
+        },
+        {
+          label: "Pause at Bottom",
+          value: Number.isFinite(metrics.pauseMs) ? `${metrics.pauseMs} ms` : "—",
+        },
         {
           label: "Tempo Ratio (down/up)",
-          value: metrics.tempoRatio.toFixed(2),
+          value: formatNumber(metrics.tempoRatio, 2),
         },
       ],
     },
     {
       title: "Range of Motion",
       items: [
-        { label: "Total ROM", value: `${metrics.romDeg.toFixed(1)}°` },
-        { label: "Pitch ROM", value: `${metrics.pitchRomDeg.toFixed(1)}°` },
-        { label: "Max Pitch", value: `${metrics.maxPitchDeg.toFixed(1)}°` },
-        { label: "Min Pitch", value: `${metrics.minPitchDeg.toFixed(1)}°` },
-        { label: "Roll ROM", value: `${metrics.rollRomDeg.toFixed(1)}°` },
-        { label: "Max Roll", value: `${metrics.maxRollDeg.toFixed(1)}°` },
-        { label: "Min Roll", value: `${metrics.minRollDeg.toFixed(1)}°` },
+        { label: "Total ROM", value: `${formatNumber(metrics.romDeg, 1)}°` },
+        { label: "Pitch ROM", value: `${formatNumber(metrics.pitchRomDeg, 1)}°` },
+        { label: "Max Pitch", value: `${formatNumber(metrics.maxPitchDeg, 1)}°` },
+        { label: "Min Pitch", value: `${formatNumber(metrics.minPitchDeg, 1)}°` },
+        { label: "Roll ROM", value: `${formatNumber(metrics.rollRomDeg, 1)}°` },
+        { label: "Max Roll", value: `${formatNumber(metrics.maxRollDeg, 1)}°` },
+        { label: "Min Roll", value: `${formatNumber(metrics.minRollDeg, 1)}°` },
       ],
     },
     {
       title: "Alignment",
       items: [
-        { label: "Peak Valgus", value: `${metrics.peakValgus.toFixed(1)}°` },
+        { label: "Peak Valgus", value: `${formatNumber(metrics.peakValgus, 1)}°` },
         {
           label: "Peak Hip Rotation",
-          value: `${metrics.peakHipRotation.toFixed(1)}°`,
+          value: `${formatNumber(metrics.peakHipRotation, 1)}°`,
         },
-        { label: "Yaw ROM", value: `${metrics.yawRomDeg.toFixed(1)}°` },
-        { label: "Max Yaw", value: `${metrics.maxYawDeg.toFixed(1)}°` },
-        { label: "Min Yaw", value: `${metrics.minYawDeg.toFixed(1)}°` },
+        { label: "Yaw ROM", value: `${formatNumber(metrics.yawRomDeg, 1)}°` },
+        { label: "Max Yaw", value: `${formatNumber(metrics.maxYawDeg, 1)}°` },
+        { label: "Min Yaw", value: `${formatNumber(metrics.minYawDeg, 1)}°` },
       ],
     },
   ];
