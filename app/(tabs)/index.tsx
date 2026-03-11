@@ -1,16 +1,26 @@
+import EmptyState from "@/components/bluetooth/EmptyState";
+import { ThemedView } from "@/components/ThemedView";
 import { IconSymbol } from "@/components/ui/IconSymbol";
+import BLEGateBanner from "@/components/workout/BLEGateBanner";
+import WorkoutTypeListItem from "@/components/workout/WorkoutTypeListItem";
 import { useAuth } from "@/contexts/Auth.Provider";
 import { useBLE } from "@/contexts/BLE.Provider";
 import { useMenu } from "@/contexts/Menu.Provider";
 import { useThemeColor } from "@/hooks/useThemeColor";
+import { useWorkoutTypes } from "@/hooks/useWorkoutQueries";
+import { WorkoutType } from "@/types/workout.types";
+import { FlashList } from "@shopify/flash-list";
 import { useNavigation, useRouter } from "expo-router";
-import { useLayoutEffect } from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { useCallback, useLayoutEffect } from "react";
+import {
+  ActivityIndicator,
+  Pressable,
+  RefreshControl,
+  StyleSheet,
+  View,
+} from "react-native";
 
 const menuActions = [
-  { id: "profile", title: "Profile", image: "person.fill" },
-  { id: "settings", title: "Settings", image: "gear" },
   { id: "calibrate", title: "Calibrate Sleeve", image: "scope" },
   { id: "signOut", title: "Sign Out", image: "eject" },
 ];
@@ -20,22 +30,25 @@ export default function HomeScreen() {
   const router = useRouter();
   const navigation = useNavigation();
   const textColor = useThemeColor({}, "text");
+  const tintColor = useThemeColor({}, "tint");
   const { createContextMenu } = useMenu();
   const { signOut } = useAuth();
-  const handleMenuAction = async (id: string) => {
-    if (id === "profile") {
-    } else if (id === "settings") {
-    } else if (id === "calibrate") {
+  const themedStyles = createThemedStyles();
+
+  const { data: workoutTypes, isLoading, isError, refetch, isRefetching } = useWorkoutTypes();
+
+  const handleMenuAction = useCallback(async (id: string) => {
+    if (id === "calibrate") {
       router.push("/calibration");
     } else if (id === "signOut") {
       await signOut();
       router.replace("/sign-in");
     }
-  };
+  }, [router, signOut]);
 
-  const handleDevicePress = () => {
+  const handleDevicePress = useCallback(() => {
     router.push("/my-devices");
-  };
+  }, [router]);
 
   // Configure the navigation header
   useLayoutEffect(() => {
@@ -65,43 +78,111 @@ export default function HomeScreen() {
         </Pressable>
       ),
     });
-  }, [navigation, pairedDevice, textColor]);
+  }, [navigation, pairedDevice, textColor, handleMenuAction, handleDevicePress, createContextMenu]);
+
+  const handleWorkoutTypePress = useCallback((workoutType: WorkoutType) => {
+    router.push({ pathname: "/workout/[id]", params: { id: workoutType.id } });
+  }, [router]);
+
+  const renderItem = useCallback(({ item }: { item: WorkoutType }) => (
+    <WorkoutTypeListItem
+      workoutType={item}
+      onPress={handleWorkoutTypePress}
+      disabled={!pairedDevice}
+    />
+  ), [pairedDevice, handleWorkoutTypePress]);
+
+  const ListHeaderComponent = !pairedDevice ? (
+    <BLEGateBanner onConnectPress={handleDevicePress} />
+  ) : null;
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.content}>
-        <Text style={[styles.welcomeText, { color: textColor }]}>
-          Welcome to Knee Sleeve
-        </Text>
-        <Text style={[styles.subtitle, { color: textColor, opacity: 0.7 }]}>
-          {pairedDevice
-            ? "Device connected"
-            : "Tap the icon to connect your device"}
-        </Text>
-      </View>
-    </SafeAreaView>
+    <ThemedView style={styles.container}>
+      {isLoading ? (
+        <View style={styles.centered}>
+          <ActivityIndicator size="large" color={tintColor} />
+        </View>
+      ) : isError ? (
+        <View style={styles.centered}>
+          <EmptyState
+            isScanning={false}
+            message="Couldn't load workouts"
+            subMessage="Pull down to try again"
+          />
+        </View>
+      ) : (
+          <FlashList
+          data={workoutTypes ?? []}
+          renderItem={renderItem}
+          keyExtractor={(item) => item.id}
+          ListHeaderComponent={
+            <View style={styles.listHeader}>
+              {ListHeaderComponent}
+            </View>
+          }
+          contentContainerStyle={styles.listContent}
+          ListEmptyComponent={
+            <View style={styles.centered}>
+              <EmptyState
+                isScanning={false}
+                message="No workout types available"
+                subMessage="Check back later"
+              />
+            </View>
+          }
+          refreshControl={
+            <RefreshControl
+              refreshing={isRefetching}
+              onRefresh={refetch}
+              tintColor={tintColor}
+            />
+          }
+          ItemSeparatorComponent={null}
+        />
+      )}
+    </ThemedView>
   );
 }
+
+const createThemedStyles = () => {
+  const cardColor = useThemeColor({}, "card");
+  const borderColor = useThemeColor({}, "border");
+  const shadowColor = useThemeColor({ light: "#000000", dark: "#000000" }, "text");
+
+  return StyleSheet.create({
+    section: {
+      marginTop: 24,
+      backgroundColor: cardColor,
+      borderRadius: 10,
+      marginHorizontal: 16,
+      overflow: "hidden",
+      shadowColor,
+      shadowOffset: { width: 0, height: 1 },
+      shadowOpacity: 0.05,
+      shadowRadius: 2.5,
+      elevation: 1,
+    },
+    divider: {
+      height: StyleSheet.hairlineWidth,
+      backgroundColor: borderColor,
+    },
+  });
+};
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  content: {
+  centered: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    paddingHorizontal: 20,
   },
-  welcomeText: {
-    fontSize: 24,
-    fontWeight: "600",
-    marginBottom: 8,
-    textAlign: "center",
+  listHeader: {
+    paddingTop: 16,
   },
-  subtitle: {
-    fontSize: 16,
-    textAlign: "center",
+  listContent: {
+    paddingBottom: 32,
   },
   headerButton: {
     padding: 8,

@@ -1,14 +1,19 @@
+import { useAuth } from "@/contexts/Auth.Provider";
 import { SquatCoachingService } from "@/services/squatCoaching.service";
 import { WorkoutAPIService } from "@/services/workout.service";
 import type { SensorData } from "@/types/sensor.types";
 import {
+  ActiveWorkoutSet,
+  CreateWorkoutSessionDTO,
   DEFAULT_USER_CALIBRATION_DATA,
   DEFAULT_WORKOUT_CONFIGURATION,
+  EndSessionDTO,
   Rep,
+  SaveSetDTO,
   UserCalibrationData,
   WorkoutConfiguration,
-  WorkoutSet,
 } from "@/types/workout.types";
+import { useQueryClient } from "@tanstack/react-query";
 import { AxiosInstance } from "axios";
 import {
   createContext,
@@ -22,26 +27,21 @@ import {
 import { useAuthApiClient } from "./AuthApi.Provider";
 import { useKneeDevice } from "./KneeDevice.Provider";
 
-// TODO not sure which of these are actually needed, will remove after proper UI is built
 export interface WorkoutContextType {
   isSetActive: boolean;
   currentSetNumber: number;
   startSet: () => Promise<void>;
   endSet: () => Promise<void>;
-  completedSets: WorkoutSet[];
-  // Real-time during active set
+  completedSets: ActiveWorkoutSet[];
   currentRepCount: number;
   currentReps: Rep[];
   lastRep: Rep | null;
-  // TODO Configuration/ Session
   isSessionActive: boolean;
-  startNewSession: (workoutId: number) => Promise<void>;
+  currentSessionId: string | null;
+  startNewSession: (workoutTypeId: string) => Promise<void>;
   endSession: () => Promise<void>;
   activeConfiguration: WorkoutConfiguration;
-  /** null when no error; set when startSet fails (e.g. no paired device) */
   setError: string | null;
-  /** TODO remove after? 
-   * Cancel current set without saving and clear completed sets (e.g. for dev reset) */
   cancelSetAndClear: () => Promise<void>;
 }
 
@@ -62,10 +62,13 @@ const WorkoutProviderInner: React.FC<{ apiClient: AxiosInstance; children: React
   children,
 }) => {
   const { subscribeSampleData, startStreaming, stopStreaming, isStreaming, sampleRate } = useKneeDevice();
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
   const workoutAPI = useMemo(() => new WorkoutAPIService(apiClient), [apiClient]);
   const squatCoachingService = useMemo(() => new SquatCoachingService(), []);
 
-  const [isSessionActive] = useState(false); // Stub: always false until session API is wired
+  const [isSessionActive, setIsSessionActive] = useState(false);
+  const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
   const [isSetActive, setIsSetActive] = useState(false);
   const isSetActiveRef = useRef(false);
   const isProcessingSetRef = useRef(false);
@@ -73,7 +76,7 @@ const WorkoutProviderInner: React.FC<{ apiClient: AxiosInstance; children: React
   const currentSetNumberRef = useRef(0);
   const [currentSetSamples, setCurrentSetSamples] = useState<SensorData[]>([]);
   const [currentReps, setCurrentReps] = useState<Rep[]>([]);
-  const [completedSets, setCompletedSets] = useState<WorkoutSet[]>([]);
+  const [completedSets, setCompletedSets] = useState<ActiveWorkoutSet[]>([]);
   const [activeConfiguration] = useState<WorkoutConfiguration>(
     DEFAULT_WORKOUT_CONFIGURATION,
   );
@@ -90,7 +93,7 @@ const WorkoutProviderInner: React.FC<{ apiClient: AxiosInstance; children: React
     });
   }, [workoutAPI]);
 
-  // Keep ref in sync so the subscriber closure always sees current value
+  // Keep refs in sync so subscriber closures always see current values
   useEffect(() => {
     isSetActiveRef.current = isSetActive;
   }, [isSetActive]);
@@ -145,13 +148,58 @@ const WorkoutProviderInner: React.FC<{ apiClient: AxiosInstance; children: React
     return null;
   }, [currentReps, completedSets]);
 
-  const startNewSession = useCallback(async (_workoutId: number) => {
-    // TODO: create session via workoutAPI; set isSessionActive when implemented
-  }, []);
+  const startNewSession = useCallback(async (workoutTypeId: string) => {
+    const dto: CreateWorkoutSessionDTO = {
+      workoutTypeId,
+      startTime: new Date(),
+    };
+
+    try {
+      const result = await workoutAPI.createSession(dto);
+      const sessionId: string = result?.id ?? `local-${Date.now()}`;
+      setCurrentSessionId(sessionId);
+    } catch (error) {
+      console.error("[WorkoutProvider] Failed to create session, using local ID", error);
+      setCurrentSessionId(`local-${Date.now()}`);
+    }
+
+    setIsSessionActive(true);
+    setCurrentSetNumber(0);
+    currentSetNumberRef.current = 0;
+    setCompletedSets([]);
+    setCurrentReps([]);
+    setCurrentSetSamples([]);
+    setSetError(null);
+  }, [workoutAPI, user?.id]);
 
   const endSession = useCallback(async () => {
-    // TODO: end session via workoutAPI
-  }, []);
+    if (!currentSessionId) return;
+
+    const dto: EndSessionDTO = {
+      sessionId: currentSessionId,
+      endTime: new Date(),
+    };
+
+    try {
+      await workoutAPI.endSession(dto);
+    } catch (error) {
+      console.error("[WorkoutProvider] Failed to end session on server", error);
+    }
+
+    setIsSessionActive(false);
+    setCurrentSessionId(null);
+    setCurrentSetNumber(0);
+    currentSetNumberRef.current = 0;
+    setCompletedSets([]);
+    setCurrentReps([]);
+    setCurrentSetSamples([]);
+    setSetError(null);
+
+    // Invalidate so Activities screen reflects the new session
+    if (user?.id) {
+      queryClient.invalidateQueries({ queryKey: ["sessionHistory", user.id] });
+    }
+  }, [currentSessionId, workoutAPI, queryClient, user?.id]);
 
   const startSet = useCallback(async () => {
     if (isSetActiveRef.current || isProcessingSetRef.current) return;
@@ -193,28 +241,37 @@ const WorkoutProviderInner: React.FC<{ apiClient: AxiosInstance; children: React
       );
 
       const setStartTime =
-        setSamples.length > 0
-          ? setSamples[0].timestamp
-          : Date.now();
+        setSamples.length > 0 ? setSamples[0].timestamp : Date.now();
       const setEndTime =
-        setSamples.length > 0
-          ? setSamples[setSamples.length - 1].timestamp
-          : Date.now();
+        setSamples.length > 0 ? setSamples[setSamples.length - 1].timestamp : Date.now();
       const nextSetNumber = currentSetNumberRef.current + 1;
 
       currentSetNumberRef.current = nextSetNumber;
-      setCompletedSets((prev) => [
-        ...prev,
-        {
-          setNumber: nextSetNumber,
-          startTime: setStartTime,
-          endTime: setEndTime,
-          reps,
-        },
-      ]);
+      const completedSet: ActiveWorkoutSet = {
+        setNumber: nextSetNumber,
+        startTime: setStartTime,
+        endTime: setEndTime,
+        reps,
+      };
+
+      setCompletedSets((prev) => [...prev, completedSet]);
       setCurrentSetNumber(nextSetNumber);
       setCurrentSetSamples([]);
       setCurrentReps([]);
+
+      // Fire-and-forget: persist the set to the server without blocking UI
+      if (currentSessionId) {
+        const dto: SaveSetDTO = {
+          sessionId: currentSessionId,
+          setNumber: nextSetNumber,
+          startTime: new Date(setStartTime),
+          endTime: new Date(setEndTime),
+          reps,
+        };
+        workoutAPI.saveSet(dto).catch((error) => {
+          console.error("[WorkoutProvider] Failed to save set", error);
+        });
+      }
     } finally {
       isProcessingSetRef.current = false;
     }
@@ -224,6 +281,8 @@ const WorkoutProviderInner: React.FC<{ apiClient: AxiosInstance; children: React
     userCalibration,
     squatCoachingService,
     stopStreaming,
+    currentSessionId,
+    workoutAPI,
   ]);
 
   const cancelSetAndClear = useCallback(async () => {
@@ -245,6 +304,7 @@ const WorkoutProviderInner: React.FC<{ apiClient: AxiosInstance; children: React
 
   const contextValue: WorkoutContextType = {
     isSessionActive,
+    currentSessionId,
     startNewSession,
     endSession,
     isSetActive,
@@ -267,9 +327,6 @@ const WorkoutProviderInner: React.FC<{ apiClient: AxiosInstance; children: React
   );
 };
 
-/**
- * Hook to access the workout context
- */
 export function useWorkoutContext(): WorkoutContextType {
   const context = useContext(WorkoutContext);
 

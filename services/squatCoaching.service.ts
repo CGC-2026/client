@@ -124,7 +124,7 @@ export class SquatCoachingService {
   
       repId += 1;
       reps.push({
-        id: repId,
+        repNumber: repId,
         startTime: startT,
         endTime: endT,
         samples: repSamples,

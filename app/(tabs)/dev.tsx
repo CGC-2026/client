@@ -417,7 +417,7 @@ export default function DevScreen() {
             {lastRep && (
               <View style={[styles.dataSection, { marginTop: 16 }]}>
                 <ThemedText style={styles.sectionTitle}>
-                  Last Rep #{lastRep.id}
+                  Last Rep #{lastRep.repNumber}
                 </ThemedText>
                 <View style={styles.dataRow}>
                   <ThemedText style={styles.dataLabel}>Duration:</ThemedText>
@@ -519,11 +519,11 @@ export default function DevScreen() {
                     </View>
                     {set.reps.map((rep) => (
                       <View
-                        key={`set-${set.setNumber}-rep-${rep.id}-${rep.startTime}`}
+                        key={`set-${set.setNumber}-rep-${rep.repNumber}-${rep.startTime}`}
                         style={styles.repHistoryRow}
                       >
                         <ThemedText style={styles.repHistoryIndex}>
-                          #{rep.id}
+                          #{rep.repNumber}
                         </ThemedText>
                         <View style={styles.repHistoryDetails}>
                           <ThemedText style={styles.repHistoryDetail}>
