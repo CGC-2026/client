@@ -1,12 +1,12 @@
 import { useThemeColor } from "@/hooks/useThemeColor";
-import { WorkoutSession } from "@/types/workout.types";
+import { WorkoutSessionHistoryItem } from "@/types/workout.types";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
 type SessionListItemProps = {
-  session: WorkoutSession;
+  session: WorkoutSessionHistoryItem;
   workoutTypeName?: string;
-  onPress: (session: WorkoutSession) => void;
+  onPress: (session: WorkoutSessionHistoryItem) => void;
 };
 
 function formatDate(date: Date): string {
@@ -25,10 +25,6 @@ function formatTime(date: Date): string {
   });
 }
 
-function getTotalReps(session: WorkoutSession): number {
-  return session.sets.reduce((acc, set) => acc + set.reps.length, 0);
-}
-
 export default function SessionListItem({
   session,
   workoutTypeName,
@@ -43,8 +39,8 @@ export default function SessionListItem({
   const tintColor = useThemeColor({}, "tint");
   const iconColor = useThemeColor({}, "icon");
 
-  const totalReps = getTotalReps(session);
-  const setCount = session.sets.length;
+  const totalReps = session.totalReps;
+  const setCount = session.totalSets;
 
   return (
     <Pressable

@@ -102,6 +102,17 @@ export interface WorkoutSession {
   sets: WorkoutSessionSet[];
 }
 
+export interface WorkoutSessionHistoryItem {
+  id: string;
+  userId: string;
+  workoutTypeId: string;
+  workoutTypeName?: string;
+  startTime: Date;
+  endTime?: Date;
+  totalSets: number;
+  totalReps: number;
+}
+
 export interface CreateWorkoutSessionDTO {
   workoutTypeId: string;
   startTime: Date;

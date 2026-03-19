@@ -6,6 +6,7 @@ import {
   SaveSetDTO,
   UserCalibrationData,
   WorkoutConfiguration,
+  WorkoutSessionHistoryItem,
   WorkoutSession,
   WorkoutType,
 } from "@/types/workout.types";
@@ -185,7 +186,7 @@ export class WorkoutAPIService {
     }
   }
 
-  async getSessionHistory(_userId: string, limit?: number): Promise<WorkoutSession[]> {
+  async getSessionHistory(_userId: string, limit?: number): Promise<WorkoutSessionHistoryItem[]> {
     const params = limit != null ? { limit } : {};
     try {
       const response = await this.authClient.get("/api/workouts/sessions/history", {
@@ -194,90 +195,107 @@ export class WorkoutAPIService {
 
       const rows = (response.data ?? []) as Array<{
         id: string;
+        user_id: string;
+        workout_type_id: string;
+        workout_type_name?: string | null;
+        start_time: string;
+        end_time?: string | null;
+        total_sets: number;
+        total_reps: number;
       }>;
 
-      if (!Array.isArray(rows) || rows.length === 0) {
-        return [];
-      }
+      if (!Array.isArray(rows) || rows.length === 0) return [];
 
-      const sessions = await Promise.all(
-        rows.map(async (row) => {
-          const detailResponse = await this.authClient.get(
-            `/api/workouts/sessions/${encodeURIComponent(row.id)}`,
-          );
-
-          const s = detailResponse.data as {
-            id: string;
-            user_id: string;
-            workout_type_id: string;
-            start_time: string;
-            end_time?: string | null;
-            sets: Array<{
-              id: string;
-              workout_session_id: string;
-              set_number: number;
-              start_time: string;
-              end_time?: string | null;
-              reps: Array<{
-                rep_number?: number;
-                repNumber?: number;
-                start_time?: number;
-                startTime?: number;
-                end_time?: number;
-                endTime?: number;
-                samples?: unknown;
-                metrics?: unknown;
-              }>;
-            }>;
-          };
-
-          return {
-            id: s.id,
-            userId: s.user_id,
-            workoutTypeId: s.workout_type_id,
-            startTime: new Date(s.start_time),
-            endTime: s.end_time ? new Date(s.end_time) : undefined,
-            sets: s.sets.map((set) => ({
-              id: set.id,
-              sessionId: set.workout_session_id,
-              setNumber: set.set_number,
-              startTime: new Date(set.start_time),
-              endTime: set.end_time ? new Date(set.end_time) : undefined,
-              reps: set.reps.map((rep, index) => {
-                const rawMetrics = rep.metrics;
-                const metricsObj =
-                  typeof rawMetrics === "string"
-                    ? JSON.parse(rawMetrics)
-                    : (rawMetrics ?? {});
-
-                const rawSamples = rep.samples;
-                const samplesArr =
-                  typeof rawSamples === "string"
-                    ? JSON.parse(rawSamples)
-                    : (rawSamples ?? []);
-
-                return {
-                  repNumber:
-                    rep.repNumber ??
-                    rep.rep_number ??
-                    (typeof index === "number" ? index + 1 : 1),
-                  startTime: rep.startTime ?? rep.start_time ?? 0,
-                  endTime: rep.endTime ?? rep.end_time ?? 0,
-                  samples: samplesArr,
-                  metrics: metricsObj,
-                };
-              }),
-            })),
-          } as WorkoutSession;
-        }),
-      );
-
-      return sessions;
+      return rows.map((row) => ({
+        id: row.id,
+        userId: row.user_id,
+        workoutTypeId: row.workout_type_id,
+        workoutTypeName: row.workout_type_name ?? undefined,
+        startTime: new Date(row.start_time),
+        endTime: row.end_time ? new Date(row.end_time) : undefined,
+        totalSets: row.total_sets,
+        totalReps: row.total_reps,
+      }));
     } catch (error) {
       if (axios.isAxiosError(error) && error.response?.status === 401) {
         console.log("[WorkoutAPI] Unauthorized fetching session history");
       } else {
         console.log("[WorkoutAPI] Failed to fetch session history", error);
+      }
+      throw error;
+    }
+  }
+
+  async getWorkoutSession(sessionId: string): Promise<WorkoutSession> {
+    try {
+      const detailResponse = await this.authClient.get(
+        `/api/workouts/sessions/${encodeURIComponent(sessionId)}`,
+      );
+
+      const s = detailResponse.data as {
+        id: string;
+        user_id: string;
+        workout_type_id: string;
+        start_time: string;
+        end_time?: string | null;
+        sets: Array<{
+          id: string;
+          workout_session_id: string;
+          set_number: number;
+          start_time: string;
+          end_time?: string | null;
+          reps: Array<{
+            rep_number?: number;
+            repNumber?: number;
+            start_time?: number;
+            startTime?: number;
+            end_time?: number;
+            endTime?: number;
+            samples?: unknown;
+            metrics?: unknown;
+          }>;
+        }>;
+      };
+
+      return {
+        id: s.id,
+        userId: s.user_id,
+        workoutTypeId: s.workout_type_id,
+        startTime: new Date(s.start_time),
+        endTime: s.end_time ? new Date(s.end_time) : undefined,
+        sets: s.sets.map((set) => ({
+          id: set.id,
+          sessionId: set.workout_session_id,
+          setNumber: set.set_number,
+          startTime: new Date(set.start_time),
+          endTime: set.end_time ? new Date(set.end_time) : undefined,
+          reps: set.reps.map((rep, index) => {
+            const rawMetrics = rep.metrics;
+            const metricsObj =
+              typeof rawMetrics === "string" ? JSON.parse(rawMetrics) : (rawMetrics ?? {});
+
+            const rawSamples = rep.samples;
+            const samplesArr =
+              typeof rawSamples === "string" ? JSON.parse(rawSamples) : (rawSamples ?? []);
+
+            return {
+              repNumber:
+                rep.repNumber ??
+                rep.rep_number ??
+                (typeof index === "number" ? index + 1 : 1),
+              startTime: rep.startTime ?? rep.start_time ?? 0,
+              endTime: rep.endTime ?? rep.end_time ?? 0,
+              samples: samplesArr,
+              metrics: metricsObj,
+            };
+          }),
+        })),
+      } as WorkoutSession;
+    } catch (error) {
+      if (axios.isAxiosError(error) && error.response?.status === 401) {
+        console.log("[WorkoutAPI] Unauthorized fetching workout session");
+      } else {
+        console.log("[WorkoutAPI] Failed to fetch workout session", error);
       }
       throw error;
     }

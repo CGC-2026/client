@@ -2,9 +2,9 @@ import EmptyState from "@/components/bluetooth/EmptyState";
 import SessionListItem from "@/components/sessions/SessionListItem";
 import { ThemedView } from "@/components/ThemedView";
 import { useAuth } from "@/contexts/Auth.Provider";
-import { useSessionHistory, useWorkoutTypes } from "@/hooks/useWorkoutQueries";
+import { useSessionHistory } from "@/hooks/useWorkoutQueries";
 import { useThemeColor } from "@/hooks/useThemeColor";
-import { WorkoutSession } from "@/types/workout.types";
+import { WorkoutSessionHistoryItem } from "@/types/workout.types";
 import { FlashList } from "@shopify/flash-list";
 import { useRouter } from "expo-router";
 import { useCallback } from "react";
@@ -28,30 +28,22 @@ export default function ActivitiesScreen() {
     isRefetching,
   } = useSessionHistory(user?.id ?? "");
 
-  const { data: workoutTypes } = useWorkoutTypes();
-
-  const getWorkoutTypeName = useCallback(
-    (workoutTypeId: string) =>
-      workoutTypes?.find((wt) => wt.id === workoutTypeId)?.name,
-    [workoutTypes],
-  );
-
   const handleSessionPress = useCallback(
-    (session: WorkoutSession) => {
+    (session: WorkoutSessionHistoryItem) => {
       router.push({ pathname: "/session/[id]", params: { id: session.id } });
     },
     [router],
   );
 
   const renderItem = useCallback(
-    ({ item }: { item: WorkoutSession }) => (
+    ({ item }: { item: WorkoutSessionHistoryItem }) => (
       <SessionListItem
         session={item}
-        workoutTypeName={getWorkoutTypeName(item.workoutTypeId)}
+        workoutTypeName={item.workoutTypeName}
         onPress={handleSessionPress}
       />
     ),
-    [getWorkoutTypeName, handleSessionPress],
+    [handleSessionPress],
   );
 
   return (
