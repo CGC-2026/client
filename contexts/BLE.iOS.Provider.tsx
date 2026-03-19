@@ -1,5 +1,5 @@
 import { ble } from "@/constants/BLE";
-import { ensurePoweredOn } from "@/lib/BLE";
+import { connectDeviceWithTimeout, ensurePoweredOn } from "@/lib/BLE";
 import { useMachine } from "@xstate/react";
 import {
   createContext,
@@ -78,6 +78,7 @@ export const IOSBleProvider: React.FC<{
   const [connectingDeviceId, setConnectingDeviceId] = useState<string | null>(
     null,
   );
+  const pairedDeviceDisconnectSubRef = useRef<Subscription | null>(null);
 
   // Use XState to manage scanning/connection states
   const [state, send] = useMachine<typeof bleMachine>(bleMachine);
@@ -105,22 +106,42 @@ export const IOSBleProvider: React.FC<{
 
         if (connectedDevices.length > 0) {
           const device = connectedDevices[0];
-          setPairedDevice(device);
-          send({ type: "CONNECTED" });
+          try {
+            const alreadyAppConnected =
+              await manager.isDeviceConnected(device.id);
 
-          // Set up disconnect listener
-          const sub = device.onDisconnected((error) => {
-            setPairedDevice(null);
-            send({ type: "DISCONNECTED" });
-          });
+            const readyDevice = alreadyAppConnected
+              ? device
+              : await connectDeviceWithTimeout(device, {
+                  requestMTU: ble.requestMTU,
+                  timeoutMs: ble.connectionTimeout,
+                });
 
-          if (!isMounted) {
-            sub.remove();
-          } else {
-            disconnectSub = sub;
+            await readyDevice.discoverAllServicesAndCharacteristics();
+
+            setPairedDevice(readyDevice);
+            send({ type: "CONNECTED" });
+
+            // Set up disconnect listener
+            const sub = readyDevice.onDisconnected((error) => {
+              setPairedDevice(null);
+              send({ type: "DISCONNECTED" });
+            });
+
+            if (!isMounted) {
+              sub.remove();
+            } else {
+              disconnectSub = sub;
+            }
+
+            return;
+          } catch (recoverError) {
+            // Fall through to lastDeviceId reconnect attempt.
+            console.error(
+              "[BLE] Failed to recover existing connected device:",
+              recoverError,
+            );
           }
-
-          return;
         }
 
         // No active connection, try auto-reconnect if we have a stored device ID
@@ -132,23 +153,10 @@ export const IOSBleProvider: React.FC<{
               .then((devices) => devices[0]);
 
             if (device) {
-              // Add timeout to prevent hanging forever
-              const connectWithTimeout = Promise.race([
-                device.connect({ requestMTU: ble.requestMTU }),
-                new Promise<never>((_, reject) =>
-                  setTimeout(
-                    () =>
-                      reject(
-                        new Error(
-                          `Connection timeout after ${ble.connectionTimeout / 1000} seconds`,
-                        ),
-                      ),
-                    ble.connectionTimeout,
-                  ),
-                ),
-              ]);
-
-              const connected = await connectWithTimeout;
+              const connected = await connectDeviceWithTimeout(device, {
+                requestMTU: ble.requestMTU,
+                timeoutMs: ble.connectionTimeout,
+              });
               await connected.discoverAllServicesAndCharacteristics();
 
               setPairedDevice(connected);
@@ -201,8 +209,65 @@ export const IOSBleProvider: React.FC<{
       if (scanTimer) {
         clearTimeout(scanTimer);
       }
+      pairedDeviceDisconnectSubRef.current?.remove();
+      pairedDeviceDisconnectSubRef.current = null;
     };
   }, [manager, scanTimer, state]);
+
+  // Manual iOS-level recovery probe:
+  // if iOS still has a connected device, rebuild RN app connection state.
+  const recoverConnectedDeviceNow = async (): Promise<boolean> => {
+    // If React Native already knows about a paired device, nothing to do.
+    if (pairedDevice) return true;
+    if (isStorageLoading) return false;
+
+    try {
+      setIsConnecting(true);
+      setConnectingDeviceId(null);
+
+      await ensurePoweredOn(manager);
+
+      const connectedDevices = await manager.connectedDevices(reconnectUUIDs);
+      if (connectedDevices.length === 0) return false;
+
+      const device = connectedDevices[0];
+      const alreadyAppConnected = await manager.isDeviceConnected(device.id);
+
+      const readyDevice = alreadyAppConnected
+        ? device
+        : await connectDeviceWithTimeout(device, {
+            requestMTU: ble.requestMTU,
+            timeoutMs: ble.connectionTimeout,
+          });
+
+      await readyDevice.discoverAllServicesAndCharacteristics();
+
+      setPairedDevice(readyDevice);
+      await setLastDeviceId(readyDevice.id);
+      send({ type: "CONNECTED" });
+
+      // Replace disconnect listener (if any).
+      pairedDeviceDisconnectSubRef.current?.remove();
+      pairedDeviceDisconnectSubRef.current = readyDevice.onDisconnected(() => {
+        setPairedDevice(null);
+        send({ type: "DISCONNECTED" });
+      });
+
+      return true;
+    } catch (error) {
+      const message = (error as any)?.message ?? "";
+      const isExpected =
+        message.includes("Operation was cancelled") ||
+        message.toLowerCase().includes("not connected");
+      if (!isExpected) {
+        console.error("[BLE] Manual iOS recovery failed:", error);
+      }
+      return false;
+    } finally {
+      setIsConnecting(false);
+      setConnectingDeviceId(null);
+    }
+  };
 
   const findDevices = async (options?: {
     serviceUUIDs?: string[];
@@ -305,22 +370,10 @@ export const IOSBleProvider: React.FC<{
       send({ type: "PAIR" });
 
       // Connect to device with timeout to prevent hanging
-      const connectWithTimeout = Promise.race([
-        device.connect({ requestMTU: ble.requestMTU }),
-        new Promise<never>((_, reject) =>
-          setTimeout(
-            () =>
-              reject(
-                new Error(
-                  `Connection timeout after ${ble.connectionTimeout / 1000} seconds`,
-                ),
-              ),
-            ble.connectionTimeout,
-          ),
-        ),
-      ]);
-
-      connectedDevice = await connectWithTimeout;
+      connectedDevice = await connectDeviceWithTimeout(device, {
+        requestMTU: ble.requestMTU,
+        timeoutMs: ble.connectionTimeout,
+      });
 
       // Discover all services and characteristics
       // This triggers iOS bonding if any characteristic requires encryption
@@ -590,6 +643,7 @@ export const IOSBleProvider: React.FC<{
         stopScan,
         pairDevice,
         disconnectDevice,
+        recoverConnectedDeviceNow,
         devices: sortedDevices,
         isScanning: state.matches("scanning"),
         pairedDevice,

@@ -9,7 +9,7 @@ import { useBLE } from "@/contexts/BLE.Provider";
 import { useStorage } from "@/contexts/Storage.Provider";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { Stack, useRouter } from "expo-router";
-import { useEffect } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import { ScrollView, StyleSheet, View } from "react-native";
 import { Device } from "react-native-ble-plx";
 
@@ -24,16 +24,56 @@ export default function BluetoothScreen() {
     isScanning,
     isConnecting,
     connectingDeviceId,
+    recoverConnectedDeviceNow,
   } = useBLE();
   const [, setLastDeviceId] = useStorage("ble.lastDeviceId");
 
   const router = useRouter();
   const themedStyles = createThemedStyles();
+  const didInitRef = useRef(false);
+
+  const handleRefreshPress = useCallback(() => {
+    // If iOS already has a device connected but RN state is missing,
+    // rebuild state immediately instead of relying on scan results.
+    if (pairedDevice) {
+      void findDevices({ serviceUUIDs: [ble.smartKneeServiceUUID] });
+      return;
+    }
+
+    void (async () => {
+      const recovered = await recoverConnectedDeviceNow();
+      if (recovered) {
+        router.replace("/my-devices");
+        return;
+      }
+
+      await findDevices({ serviceUUIDs: [ble.smartKneeServiceUUID] });
+    })();
+  }, [
+    pairedDevice,
+    findDevices,
+    recoverConnectedDeviceNow,
+    router,
+  ]);
 
   useEffect(() => {
-    // scan for devices on first render
-    findDevices({ serviceUUIDs: [ble.smartKneeServiceUUID] });
-  }, []);
+    // On entry: if iOS already has a device connected but RN state is missing,
+    // restore state immediately; otherwise scan normally.
+    if (didInitRef.current) return;
+    didInitRef.current = true;
+
+    void (async () => {
+      if (!pairedDevice) {
+        const recovered = await recoverConnectedDeviceNow();
+        if (recovered) {
+          router.replace("/my-devices");
+          return;
+        }
+      }
+
+      await findDevices({ serviceUUIDs: [ble.smartKneeServiceUUID] });
+    })();
+  }, [recoverConnectedDeviceNow, findDevices, router]);
 
   const handleDevicePress = async (device: Device) => {
     if (isConnecting) {
@@ -47,7 +87,7 @@ export default function BluetoothScreen() {
       // Save paired device ID to storage for auto-reconnection
       await setLastDeviceId(device.id);
       // Go back to My Devices screen
-      router.back();
+      router.replace("/my-devices");
     }
   };
 
@@ -68,12 +108,7 @@ export default function BluetoothScreen() {
           <ScreenHeader title="Devices" subtitle="Connect to your device" />
           <ScanButton
             isScanning={isScanning}
-            onPress={
-              isScanning
-                ? stopScan
-                : () =>
-                    findDevices({ serviceUUIDs: [ble.smartKneeServiceUUID] })
-            }
+            onPress={isScanning ? stopScan : handleRefreshPress}
             disabled={isConnecting}
           />
         </View>

@@ -87,29 +87,15 @@ export function movingAverage(x: number[], window: number): number[] {
  * @example
  * computeDepthAndRom([10, 20, 30, 20, 10], 10) // { depthDeg: 20, romDeg: 20 }
  */
-export function computeDepthAndRom(
-  angleSm: number[],
-  standingAngle: number,
-): {
-  depthDeg: number;
-  romDeg: number;
-} {
-  let minA = Infinity;
-  let maxA = -Infinity;
-
-  for (const a of angleSm) {
-    if (a < minA) minA = a;
-    if (a > maxA) maxA = a;
-  }
-
+export function computeDepthAndRom(angleSm: number[], standingAngle: number) {
+  const mean = angleSm.reduce((s, a) => s + a, 0) / angleSm.length;
+  const std = Math.sqrt(angleSm.reduce((s, a) => s + (a - mean) ** 2, 0) / angleSm.length);
+  const filtered = angleSm.filter(a => Math.abs(a - mean) <= 2 * std);  // drop outliers
+  
+  const minA = Math.min(...filtered);
+  const maxA = Math.max(...filtered);
   const romDeg = maxA - minA;
-
-  // Depth is max deviation from standing baseline, regardless of sign
-  const depthDeg = Math.max(
-    Math.abs(maxA - standingAngle),
-    Math.abs(minA - standingAngle),
-  );
-
+  const depthDeg = Math.max(Math.abs(maxA - standingAngle), Math.abs(minA - standingAngle));
   return { depthDeg, romDeg };
 }
 
@@ -192,4 +178,19 @@ export function computePauseMs(
   }
 
   return maxDurationMs;
+}
+
+export function movingMedian(x: number[], window: number = 5): number[] {
+  if (window <= 1 || x.length < window) return [...x];
+  const w = Math.max(1, Math.floor(window));
+  const half = Math.floor(w / 2);
+  const out = new Array<number>(x.length);
+
+  for (let i = 0; i < x.length; i++) {
+    const lo = Math.max(0, i - half);
+    const hi = Math.min(x.length - 1, i + half);
+    const windowSlice = x.slice(lo, hi + 1);
+    out[i] = median(windowSlice);
+  }
+  return out;
 }
