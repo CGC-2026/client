@@ -87,6 +87,15 @@ export type BLEContextType = {
     characteristicUUID: string,
     callback: (data: string | null) => void,
   ) => Promise<(() => void) | null>;
+
+  /**
+   * Attempt to detect an already-connected device (OS level)
+   * and rebuild React Native connection state internally.
+   *
+   * Useful when the device is connected but `pairedDevice` is missing.
+   * @returns true if we restored connection state.
+   */
+  recoverConnectedDeviceNow: () => Promise<boolean>;
 };
 
 export default function BLEProvider({

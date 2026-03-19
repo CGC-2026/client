@@ -138,7 +138,10 @@ function AxisGraph({
   
     // Always include 0 in the range
     const chartMin = Math.min(0, dataMin);
-    const chartMax = Math.max(0, dataMax) * 1.15; // 15% headroom above max
+    const rawChartMax = Math.max(0, dataMax) * 1.15; // 15% headroom above max
+    // Prevent division-by-zero / Infinity when the series is perfectly flat.
+    // Using a readable default keeps the chart library stable.
+    const chartMax = rawChartMax === 0 ? 1 : rawChartMax;
   
     const graphData = transformedValues.map((value) => ({ value }));
     const yAxisOffset = chartMin;
@@ -163,6 +166,14 @@ function AxisGraph({
   const CHART_HEIGHT = 220;
   const Y_AXIS_WIDTH = 45;
   const chartWidth = Math.max(260, windowWidth - 32 - 24);
+  const chartMax = chartProps.chartMax;
+  // Safety zones are defined as value ranges:
+  // 0-5 (green), 5-10 (yellow), 10-15 (orange), 15+ (red).
+  // Convert zone lengths into `flex` fractions so the overlay always fits the chart.
+  const zone0To5 = Math.min(chartMax, 5);
+  const zone5To10 = Math.min(Math.max(chartMax - 5, 0), 5);
+  const zone10To15 = Math.min(Math.max(chartMax - 10, 0), 5);
+  const zone15Plus = Math.max(chartMax - 15, 0);
 
   return (
     <View style={{ marginBottom: 24 }}>
@@ -199,25 +210,25 @@ function AxisGraph({
             >
               <View
                 style={{
-                  flex: Math.max(0, chartProps.chartMax - 15) / chartProps.chartMax,
+                  flex: zone15Plus / chartMax,
                   backgroundColor: "rgba(244, 67, 54, 0.16)",
                 }}
               />
               <View
                 style={{
-                  flex: 5 / chartProps.chartMax,
+                  flex: zone10To15 / chartMax,
                   backgroundColor: "rgba(255, 152, 0, 0.14)",
                 }}
               />
               <View
                 style={{
-                  flex: 5 / chartProps.chartMax,
+                  flex: zone5To10 / chartMax,
                   backgroundColor: "rgba(255, 235, 59, 0.12)",
                 }}
               />
               <View
                 style={{
-                  flex: 5 / chartProps.chartMax,
+                  flex: zone0To5 / chartMax,
                   backgroundColor: "rgba(76, 175, 80, 0.14)",
                 }}
               />

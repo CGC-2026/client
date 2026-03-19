@@ -191,7 +191,6 @@ export class WorkoutAPIService {
       const response = await this.authClient.get("/api/workouts/sessions/history", {
         params,
       });
-      console.log(response.data)
 
       const rows = (response.data ?? []) as Array<{
         id: string;
