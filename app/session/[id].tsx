@@ -1,13 +1,12 @@
 import RepMetricsModal from "@/components/sessions/RepMetricsModal";
 import SetAccordionItem from "@/components/sessions/SetAccordionItem";
 import { ThemedView } from "@/components/ThemedView";
-import { useAuth } from "@/contexts/Auth.Provider";
-import { useSessionHistory, useWorkoutTypes } from "@/hooks/useWorkoutQueries";
+import { useWorkoutSession, useWorkoutTypes } from "@/hooks/useWorkoutQueries";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { Rep, WorkoutSessionSet } from "@/types/workout.types";
 import { Stack, useLocalSearchParams } from "expo-router";
 import { useCallback, useState } from "react";
-import { FlatList, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, FlatList, StyleSheet, Text, View } from "react-native";
 
 function formatDate(date: Date): string {
   return new Date(date).toLocaleDateString(undefined, {
@@ -37,13 +36,13 @@ function formatDuration(start: Date, end?: Date): string {
 
 export default function SessionDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { user } = useAuth();
   const themedStyles = createThemedStyles();
+  const tintColor = useThemeColor({}, "tint");
 
-  const { data: sessions } = useSessionHistory(user?.id ?? "");
+  const { data: session, isLoading: isSessionLoading, isError: isSessionError } =
+    useWorkoutSession(id);
   const { data: workoutTypes } = useWorkoutTypes();
 
-  const session = sessions?.find((s) => s.id === id);
   const workoutTypeName = workoutTypes?.find(
     (wt) => wt.id === session?.workoutTypeId,
   )?.name;
@@ -68,12 +67,35 @@ export default function SessionDetailScreen() {
     [handleRepPress],
   );
 
-  if (!session) {
+  if (!isSessionLoading && (!session || isSessionError)) {
     return (
       <ThemedView style={styles.container}>
-        <Stack.Screen options={{ title: "Session" }} />
+        <Stack.Screen options={{ 
+          title: "Session",
+          headerBackTitle: "Activities",
+          headerStyle: { backgroundColor: themedStyles.headerBackground },
+          headerShadowVisible: false,
+        }} 
+        />
         <View style={styles.centered}>
           <Text style={themedStyles.notFoundText}>Session not found</Text>
+        </View>
+      </ThemedView>
+    );
+  }
+
+  if (isSessionLoading || !session) {
+    return (
+      <ThemedView style={styles.container}>
+        <Stack.Screen options={{ 
+          title: "Session", 
+          headerBackTitle: "Activities",
+          headerStyle: { backgroundColor: themedStyles.headerBackground },
+          headerShadowVisible: false,
+          }} 
+        />
+        <View style={styles.centered}>
+          <ActivityIndicator size="large" color={tintColor} />
         </View>
       </ThemedView>
     );
