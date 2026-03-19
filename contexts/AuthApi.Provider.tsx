@@ -16,7 +16,11 @@ export const AuthApiProvider: React.FC<{ children: React.ReactNode }> = ({
 
   const authClient = useMemo(() => {
     if (!getToken) return null;
-    return createAuthApiClient(getToken);
+    // Force skipCache: true to ensure we always get a fresh token from Clerk.
+    // This helps mitigate clock skew issues where a cached token might be 
+    // considered valid by the client but expired by the server.
+    const wrappedGetToken = () => getToken({ skipCache: true });
+    return createAuthApiClient(wrappedGetToken);
   }, [getToken]);
 
   return (

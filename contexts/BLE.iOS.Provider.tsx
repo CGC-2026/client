@@ -105,11 +105,19 @@ export const IOSBleProvider: React.FC<{
 
         if (connectedDevices.length > 0) {
           const device = connectedDevices[0];
-          setPairedDevice(device);
+          const alreadyAppConnected = await manager.isDeviceConnected(device.id);
+          
+          const readyDevice = alreadyAppConnected
+          ? device
+          : await device.connect({ requestMTU: ble.requestMTU });
+
+          await readyDevice.discoverAllServicesAndCharacteristics();
+
+          setPairedDevice(readyDevice);
           send({ type: "CONNECTED" });
 
           // Set up disconnect listener
-          const sub = device.onDisconnected((error) => {
+          const sub = readyDevice.onDisconnected((error) => {
             setPairedDevice(null);
             send({ type: "DISCONNECTED" });
           });
