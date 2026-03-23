@@ -91,7 +91,7 @@ const WorkoutProviderInner: React.FC<{ apiClient: AxiosInstance; children: React
     }).catch((error) => {
       console.error("[WorkoutProvider] Failed to load calibration", error);
     });
-  }, [workoutAPI]);
+  }, []);
 
   // Keep refs in sync so subscriber closures always see current values
   useEffect(() => {
