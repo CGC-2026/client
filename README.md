@@ -24,7 +24,8 @@ It is currently implemented with an iOS-first BLE architecture (`react-native-bl
 
 ## Screenshots
 
-TODO
+<img width="2071" height="4184" alt="image" src="https://github.com/user-attachments/assets/c4dd7856-7535-44a5-933e-8d54abdb462f" />
+
 
 ---
 
