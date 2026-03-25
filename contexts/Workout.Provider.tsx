@@ -86,12 +86,22 @@ const WorkoutProviderInner: React.FC<{ apiClient: AxiosInstance; children: React
   );
 
   useEffect(() => {
+    if (!user?.id) {
+      setUserCalibration(DEFAULT_USER_CALIBRATION_DATA);
+      return;
+    }
     workoutAPI.getUserCalibration().then((calibration) => {
       if (calibration) setUserCalibration(calibration);
     }).catch((error) => {
       console.error("[WorkoutProvider] Failed to load calibration", error);
     });
-  }, []);
+    // workoutAPI is intentionally omitted: Clerk's getToken is not a stable
+    // reference, so workoutAPI recreates on every token refresh. Since each
+    // workoutAPI instance always fetches a fresh token per-request anyway,
+    // any version captured here is functionally identical. Calibration only
+    // needs one fetch per user session, not once per token refresh.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id]);
 
   // Keep refs in sync so subscriber closures always see current values
   useEffect(() => {
