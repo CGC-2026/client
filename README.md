@@ -156,7 +156,7 @@ BLE state transitions are managed with XState in the iOS provider (`idle -> scan
 ┌─────────────────────────────────────────────────────────────┐
 │ UI Layer (Expo Router screens + feature components)         │
 ├─────────────────────────────────────────────────────────────┤
-│ Context Layer (Auth, BLE, KneeDevice, Workout, Battery)    │
+│ Context Layer (Auth, BLE, KneeDevice, Workout, Battery)     │
 ├─────────────────────────────────────────────────────────────┤
 │ Services Layer (BLE service, workout API service, exports)  │
 ├─────────────────────────────────────────────────────────────┤
@@ -170,3 +170,4 @@ BLE state transitions are managed with XState in the iOS provider (`idle -> scan
 
 - BLE functionality is iOS-first and relies on native capabilities unavailable in standard web runtime.
 - For best validation of BLE flows, test on a physical iPhone with the target device nearby.
+- Integrates with firmware via [BLE](https://github.com/CGC-2026/device-firmware) and the [server](https://github.com/CGC-2026/server) via REST APIs 
