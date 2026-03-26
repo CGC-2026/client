@@ -85,7 +85,7 @@ EXPO_PUBLIC_API_BASE_URL=
 npx expo start
 ```
 
-You can also run native iOS builds directly (preserved from original setup notes):
+You can also run native iOS builds directly:
 
 ```bash
 npx expo run:ios --device
