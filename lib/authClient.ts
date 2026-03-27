@@ -49,8 +49,6 @@ export function extractAxiosErrorContext(error: unknown): {
 export function createAuthApiClient(
   getToken: () => Promise<string | null>,
 ): AxiosInstance {
-  console.log("[AuthClient] Base URL:", env.API_URL);
-
   const instance = axios.create({
     baseURL: env.API_URL,
     timeout: 15_000,
