@@ -1,4 +1,5 @@
 import { useAuth } from "@/contexts/Auth.Provider";
+import { logger } from "@/lib/logger";
 import { SquatCoachingService } from "@/services/squatCoaching.service";
 import { WorkoutAPIService } from "@/services/workout.service";
 import type { SensorData } from "@/types/sensor.types";
@@ -27,6 +28,8 @@ import {
 import { useAuthApiClient } from "./AuthApi.Provider";
 import { useKneeDevice } from "./KneeDevice.Provider";
 
+const TAG = "Workout";
+
 export interface WorkoutContextType {
   isSetActive: boolean;
   currentSetNumber: number;
@@ -47,7 +50,8 @@ export interface WorkoutContextType {
 
 const WorkoutContext = createContext<WorkoutContextType | null>(null);
 
-const RE_SEGMENT_EVERY_N_SAMPLES = 30;
+// At 120 Hz, 10 samples ≈ 83 ms — keeps the live rep count feeling immediate.
+const RE_SEGMENT_EVERY_N_SAMPLES = 10;
 
 export const WorkoutProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
@@ -93,7 +97,7 @@ const WorkoutProviderInner: React.FC<{ apiClient: AxiosInstance; children: React
     workoutAPI.getUserCalibration().then((calibration) => {
       if (calibration) setUserCalibration(calibration);
     }).catch((error) => {
-      console.error("[WorkoutProvider] Failed to load calibration", error);
+      logger.error(TAG, "Failed to load calibration on mount", error);
     });
     // workoutAPI is intentionally omitted: Clerk's getToken is not a stable
     // reference, so workoutAPI recreates on every token refresh. Since each
@@ -168,9 +172,11 @@ const WorkoutProviderInner: React.FC<{ apiClient: AxiosInstance; children: React
       const result = await workoutAPI.createSession(dto);
       const sessionId: string = result?.id ?? `local-${Date.now()}`;
       setCurrentSessionId(sessionId);
+      logger.info(TAG, "Session started", { sessionId, workoutTypeId });
     } catch (error) {
-      console.error("[WorkoutProvider] Failed to create session, using local ID", error);
-      setCurrentSessionId(`local-${Date.now()}`);
+      const localId = `local-${Date.now()}`;
+      logger.error(TAG, "Failed to create session on server, using local ID", error, { localId });
+      setCurrentSessionId(localId);
     }
 
     setIsSessionActive(true);
@@ -180,7 +186,7 @@ const WorkoutProviderInner: React.FC<{ apiClient: AxiosInstance; children: React
     setCurrentReps([]);
     setCurrentSetSamples([]);
     setSetError(null);
-  }, [workoutAPI, user?.id]);
+  }, [workoutAPI]);
 
   const endSession = useCallback(async () => {
     if (!currentSessionId) return;
@@ -192,8 +198,9 @@ const WorkoutProviderInner: React.FC<{ apiClient: AxiosInstance; children: React
 
     try {
       await workoutAPI.endSession(dto);
+      logger.info(TAG, "Session ended", { sessionId: currentSessionId });
     } catch (error) {
-      console.error("[WorkoutProvider] Failed to end session on server", error);
+      logger.error(TAG, "Failed to end session on server", error, { sessionId: currentSessionId });
     }
 
     setIsSessionActive(false);
@@ -228,6 +235,7 @@ const WorkoutProviderInner: React.FC<{ apiClient: AxiosInstance; children: React
       setCurrentReps([]);
       isSetActiveRef.current = true;
       setIsSetActive(true);
+      logger.info(TAG, "Set started", { setNumber: currentSetNumberRef.current + 1, sessionId: currentSessionId });
     } finally {
       isProcessingSetRef.current = false;
     }
@@ -269,7 +277,8 @@ const WorkoutProviderInner: React.FC<{ apiClient: AxiosInstance; children: React
       setCurrentSetSamples([]);
       setCurrentReps([]);
 
-      // Fire-and-forget: persist the set to the server without blocking UI
+      logger.info(TAG, "Set ended", { setNumber: nextSetNumber, repCount: reps.length, sessionId: currentSessionId });
+
       if (currentSessionId) {
         const dto: SaveSetDTO = {
           sessionId: currentSessionId,
@@ -279,7 +288,7 @@ const WorkoutProviderInner: React.FC<{ apiClient: AxiosInstance; children: React
           reps,
         };
         workoutAPI.saveSet(dto).catch((error) => {
-          console.error("[WorkoutProvider] Failed to save set", error);
+          logger.error(TAG, "Failed to save set to server", error, { setNumber: nextSetNumber, sessionId: currentSessionId });
         });
       }
     } finally {

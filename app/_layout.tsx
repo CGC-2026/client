@@ -1,5 +1,6 @@
 import { ble } from "@/constants/BLE";
-import AuthProvider from "@/contexts/Auth.Provider";
+import { env } from "@/constants/env";
+import AuthProvider, { useAuth } from "@/contexts/Auth.Provider";
 import { AuthApiProvider } from "@/contexts/AuthApi.Provider";
 import { BatteryProvider } from "@/contexts/Battery.Provider";
 import BLEProvider from "@/contexts/BLE.Provider";
@@ -17,12 +18,42 @@ import {
   DefaultTheme,
   ThemeProvider,
 } from "@react-navigation/native";
+import * as Sentry from "@sentry/react-native";
 import { useFonts } from "expo-font";
 import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
+import { useEffect } from "react";
 import "react-native-reanimated";
 
-export default function RootLayout() {
+Sentry.init({
+  dsn: env.EXPO_PUBLIC_SENTRY_DSN,
+
+  sendDefaultPii: true,
+  enableLogs: true,
+});
+
+/**
+ * Keeps the Sentry user context in sync with the signed-in Clerk user.
+ * Must be rendered inside <AuthProvider> to access Clerk hooks.
+ */
+function SentryUserSync() {
+  const { user, isSignedIn } = useAuth();
+
+  useEffect(() => {
+    if (isSignedIn && user) {
+      Sentry.setUser({
+        id: user.id,
+        email: user.primaryEmailAddress?.emailAddress,
+      });
+    } else {
+      Sentry.setUser(null);
+    }
+  }, [isSignedIn, user?.id]);
+
+  return null;
+}
+
+export default Sentry.wrap(function RootLayout() {
   const colorScheme = useColorScheme();
   const [loaded] = useFonts({
     SpaceMono: require("../assets/fonts/SpaceMono-Regular.ttf"),
@@ -38,6 +69,7 @@ export default function RootLayout() {
       <QueryProvider>
         <StorageProvider>
           <AuthProvider>
+            <SentryUserSync />
             <AuthApiProvider>
               <WorkoutAPIProvider>
                 <CSVExportProvider>
@@ -108,4 +140,4 @@ export default function RootLayout() {
       </QueryProvider>
     </ThemeProvider>
   );
-}
+});

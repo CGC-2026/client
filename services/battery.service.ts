@@ -1,6 +1,9 @@
 import { ble } from "@/constants/BLE";
 import { BLEContextType } from "@/contexts/BLE.Provider";
+import { logger } from "@/lib/logger";
 import { Buffer } from "buffer";
+
+const TAG = "Battery";
 
 // Battery data with timestamp
 export interface BatteryData {
@@ -29,35 +32,28 @@ export class BatteryService {
     );
 
     if (!base64Data) {
-      console.error("[Battery] Failed to read battery level");
+      logger.error(TAG, "Failed to read battery level");
       return null;
     }
 
     try {
       const buffer = Buffer.from(base64Data, "base64");
 
-      // Validate packet size (should be 1 byte)
       if (buffer.length !== 1) {
-        console.error(
-          `[Battery] Invalid packet size: ${buffer.length} bytes (expected 1)`,
-        );
+        logger.warn(TAG, "Invalid packet size", { bytes: buffer.length, expected: 1 });
         return null;
       }
 
-      // Read uint8 value (0-100)
       const level = buffer.readUInt8(0);
 
-      // Validate range
       if (level < 0 || level > 100) {
-        console.warn(
-          `[Battery] Invalid battery level: ${level}% (out of range)`,
-        );
-        return Math.max(0, Math.min(100, level)); // Clamp to valid range
+        logger.warn(TAG, "Battery level out of range, clamping", { level });
+        return Math.max(0, Math.min(100, level));
       }
 
       return level;
     } catch (error) {
-      console.error("[Battery] Error decoding battery level:", error);
+      logger.error(TAG, "Error decoding battery level", error);
       return null;
     }
   }
@@ -75,7 +71,7 @@ export class BatteryService {
       ble.batteryLevelCharacteristicUUID,
       (base64Data) => {
         if (!base64Data) {
-          console.warn("[Battery] Received null/empty data");
+          logger.warn(TAG, "Received null/empty notification data");
           callback(null);
           return;
         }
@@ -83,39 +79,31 @@ export class BatteryService {
         try {
           const buffer = Buffer.from(base64Data, "base64");
 
-          // Validate packet size
           if (buffer.length !== 1) {
-            console.error(
-              `[Battery] Invalid packet size: ${buffer.length} bytes (expected 1)`,
-            );
+            logger.warn(TAG, "Invalid notification packet size", { bytes: buffer.length, expected: 1 });
             callback(null);
             return;
           }
 
-          // Read uint8 value (0-100)
           const level = buffer.readUInt8(0);
 
-          // Validate range
           if (level < 0 || level > 100) {
-            console.warn(
-              `[Battery] Invalid battery level: ${level}% (out of range)`,
-            );
+            logger.warn(TAG, "Notification battery level out of range, clamping", { level });
           }
 
-          // Clamp to valid range and return with timestamp
           callback({
             level: Math.max(0, Math.min(100, level)),
             timestamp: Date.now(),
           });
         } catch (error) {
-          console.error("[Battery] Error parsing battery data:", error);
+          logger.error(TAG, "Error parsing battery notification", error);
           callback(null);
         }
       },
     );
 
     if (!unsubscribe) {
-      console.error("[Battery] Failed to subscribe to battery level");
+      logger.error(TAG, "Failed to subscribe to battery level notifications");
     }
 
     return unsubscribe;

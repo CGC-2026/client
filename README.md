@@ -91,6 +91,8 @@ You can also run native iOS builds directly:
 npx expo run:ios --device
 npx expo run:ios --device --configuration Release
 npx expo run:ios --device --configuration Release --no-bundler
+npx expo prebuild --clean && npx expo run:ios
+
 ```
 
 Package scripts:

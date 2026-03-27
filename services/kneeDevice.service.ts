@@ -1,7 +1,10 @@
 import { ble, DEFAULT_SAMPLE_RATE } from "@/constants/BLE";
 import { BLEContextType } from "@/contexts/BLE.Provider";
+import { logger } from "@/lib/logger";
 import { Buffer } from "buffer";
 import type { SensorData } from "@/types/sensor.types";
+
+const TAG = "KneeDevice";
 
 export type { SensorData };
 
@@ -54,7 +57,7 @@ export class KneeDeviceService {
     );
 
     if (!success) {
-      console.error("[KneeDevice] Failed to start streaming");
+      logger.error(TAG, "Failed to start streaming");
     }
 
     return success;
@@ -67,7 +70,7 @@ export class KneeDeviceService {
   async stopStreaming(): Promise<boolean> {
     const controlData = this.encodeControlState({
       stream: 0,
-      sampleRate: DEFAULT_SAMPLE_RATE, // Sample rate doesn't matter when stopping
+      sampleRate: DEFAULT_SAMPLE_RATE,
       mode: StreamingMode.IDLE,
     });
 
@@ -78,7 +81,7 @@ export class KneeDeviceService {
     );
 
     if (!success) {
-      console.error("[KneeDevice] Failed to stop streaming");
+      logger.error(TAG, "Failed to stop streaming");
     }
 
     return success;
@@ -95,7 +98,7 @@ export class KneeDeviceService {
     );
 
     if (!base64Data) {
-      console.error("[KneeDevice] Failed to read control state");
+      logger.error(TAG, "Failed to read control state");
       return null;
     }
 
@@ -107,7 +110,7 @@ export class KneeDeviceService {
         mode: buffer.readUInt8(2) as StreamingMode,
       };
     } catch (error) {
-      console.error("[KneeDevice] Error decoding control state:", error);
+      logger.error(TAG, "Error decoding control state", error);
       return null;
     }
   }
@@ -125,7 +128,7 @@ export class KneeDeviceService {
       ble.fusedDataCharacteristicUUID,
       (base64Data) => {
         if (!base64Data) {
-          console.warn("[KneeDevice] Received null/empty data");
+          logger.warn(TAG, "Received null/empty sensor data packet");
           callback(null);
           return;
         }
@@ -134,14 +137,14 @@ export class KneeDeviceService {
           const parsed = this.parseFusedPacket(base64Data);
           callback(parsed);
         } catch (error) {
-          console.error("[KneeDevice] Error parsing sensor data:", error);
+          logger.error(TAG, "Error parsing sensor data packet", error);
           callback(null);
         }
       },
     );
 
     if (!unsubscribe) {
-      console.error("[KneeDevice] Failed to subscribe to sensor data");
+      logger.error(TAG, "Failed to subscribe to sensor data notifications");
     }
 
     return unsubscribe;

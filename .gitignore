@@ -46,3 +46,8 @@ coverage/
 .idea/
 
 z/
+.env.local
+
+# Sentry — contain auth tokens, never commit
+ios/sentry.properties
+android/sentry.properties

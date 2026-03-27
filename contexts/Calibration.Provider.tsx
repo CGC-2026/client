@@ -1,6 +1,9 @@
+import { logger } from "@/lib/logger";
 import { mediansForRollPitchYaw } from "@/lib/math";
 import type { SensorData } from "@/types/sensor.types";
 import { WorkoutAPIService } from "@/services/workout.service";
+
+const TAG = "Calibration";
 import { CreateUserCalibrationData, UserCalibrationData } from "@/types/workout.types";
 import React, {
   createContext,
@@ -120,6 +123,7 @@ export const CalibrationProvider: React.FC<{ children: React.ReactNode }> = ({
     setError(null);
     calibrationSamplesRef.current = [];
 
+    logger.info(TAG, "Calibration started");
     const success = await startStreaming(sampleRate);
     if (!success) {
       isCalibratingRef.current = false;
@@ -161,13 +165,14 @@ export const CalibrationProvider: React.FC<{ children: React.ReactNode }> = ({
           setCalibration(data);
         }
         setError(null);
+        logger.info(TAG, "Calibration completed", {
+          roll: calibrationData.standingRollAngle,
+          pitch: calibrationData.standingPitchAngle,
+          yaw: calibrationData.standingYawAngle,
+        });
       } catch (e) {
         const err = e instanceof Error ? e : new Error(String(e));
-        console.error("[Calibration] saveCalibration failed", {
-          message: err.message,
-          stack: err.stack,
-          calibrationData: { ...calibrationData },
-        });
+        logger.error(TAG, "Failed to save calibration", err, { calibrationData });
         setError("Failed to save calibration");
       } finally {
         isCalibratingRef.current = false;
@@ -196,10 +201,7 @@ export const CalibrationProvider: React.FC<{ children: React.ReactNode }> = ({
       }
     } catch (e) {
       const err = e instanceof Error ? e : new Error(String(e));
-      console.error("[Calibration] loadCalibration (getUserCalibration) failed", {
-        message: err.message,
-        stack: err.stack,
-      });
+      logger.error(TAG, "Failed to load calibration", err);
       setError("Failed to load calibration");
     }
   }, [workoutAPI]);

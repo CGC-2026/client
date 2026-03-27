@@ -1,3 +1,5 @@
+import { extractAxiosErrorContext } from "@/lib/authClient";
+import { logger } from "@/lib/logger";
 import {
   CreateWorkoutSessionDTO,
   CreateUserCalibrationData,
@@ -11,6 +13,8 @@ import {
   WorkoutType,
 } from "@/types/workout.types";
 import axios, { AxiosInstance } from "axios";
+
+const TAG = "WorkoutAPI";
 
 function mapConfigToWorkoutConfiguration(config: Record<string, unknown>): WorkoutConfiguration {
   const get = (snake: string, camel: string): number | undefined => {
@@ -61,10 +65,11 @@ export class WorkoutAPIService {
         config: mapConfigToWorkoutConfiguration(item.config ?? {}),
       }));
     } catch (error) {
+      const { message, context } = extractAxiosErrorContext(error);
       if (axios.isAxiosError(error) && error.response?.status === 401) {
-        console.log("[WorkoutAPI] Unauthorized fetching workout types");
+        logger.warn(TAG, `Unauthorized fetching workout types — ${message}`, context);
       } else {
-        console.log("[WorkoutAPI] Failed to fetch workout types", error);
+        logger.error(TAG, `Failed to fetch workout types — ${message}`, error, context);
       }
       throw error;
     }
@@ -88,12 +93,11 @@ export class WorkoutAPIService {
           updatedAt: new Date(response.data.updated_at),
         };
     } catch (error) {
+      const { message, context } = extractAxiosErrorContext(error);
       if (axios.isAxiosError(error) && error.response?.status === 404) {
-        console.log("[WorkoutAPI] No calibration found for user");
+        logger.info(TAG, `No calibration found for user — ${message}`, context);
       } else {
-        console.log(
-          "[WorkoutAPI] Something went wrong getting calibration data",
-        );
+        logger.error(TAG, `Failed to get calibration data — ${message}`, error, context);
       }
     }
   }
@@ -112,10 +116,11 @@ export class WorkoutAPIService {
     try {
       await this.authClient.post("/api/users/me/calibration", body);
     } catch (error) {
+      const { message, context } = extractAxiosErrorContext(error);
       if (axios.isAxiosError(error) && error.response?.status === 401) {
-        console.log("[WorkoutAPI] Unauthorized saving calibration");
+        logger.warn(TAG, `Unauthorized saving calibration — ${message}`, context);
       } else {
-        console.log("[WorkoutAPI] Failed to save calibration", error);
+        logger.error(TAG, `Failed to save calibration — ${message}`, error, context);
       }
       throw error;
     }
@@ -130,10 +135,11 @@ export class WorkoutAPIService {
       const response = await this.authClient.post("/api/workouts/sessions", body);
       return { id: response.data.id };
     } catch (error) {
+      const { message, context } = extractAxiosErrorContext(error);
       if (axios.isAxiosError(error) && error.response?.status === 401) {
-        console.log("[WorkoutAPI] Unauthorized creating session");
+        logger.warn(TAG, `Unauthorized creating session — ${message}`, context);
       } else {
-        console.log("[WorkoutAPI] Failed to create session", error);
+        logger.error(TAG, `Failed to create session — ${message}`, error, context);
       }
       throw error;
     }
@@ -158,10 +164,11 @@ export class WorkoutAPIService {
         body,
       );
     } catch (error) {
+      const { message, context } = extractAxiosErrorContext(error);
       if (axios.isAxiosError(error) && error.response?.status === 401) {
-        console.log("[WorkoutAPI] Unauthorized saving set");
+        logger.warn(TAG, `Unauthorized saving set — ${message}`, context);
       } else {
-        console.log("[WorkoutAPI] Failed to save set", error);
+        logger.error(TAG, `Failed to save set — ${message}`, error, context);
       }
       throw error;
     }
@@ -177,10 +184,11 @@ export class WorkoutAPIService {
         body,
       );
     } catch (error) {
+      const { message, context } = extractAxiosErrorContext(error);
       if (axios.isAxiosError(error) && error.response?.status === 401) {
-        console.log("[WorkoutAPI] Unauthorized ending session");
+        logger.warn(TAG, `Unauthorized ending session — ${message}`, context);
       } else {
-        console.log("[WorkoutAPI] Failed to end session", error);
+        logger.error(TAG, `Failed to end session — ${message}`, error, context);
       }
       throw error;
     }
@@ -217,10 +225,11 @@ export class WorkoutAPIService {
         totalReps: row.total_reps,
       }));
     } catch (error) {
+      const { message, context } = extractAxiosErrorContext(error);
       if (axios.isAxiosError(error) && error.response?.status === 401) {
-        console.log("[WorkoutAPI] Unauthorized fetching session history");
+        logger.warn(TAG, `Unauthorized fetching session history — ${message}`, context);
       } else {
-        console.log("[WorkoutAPI] Failed to fetch session history", error);
+        logger.error(TAG, `Failed to fetch session history — ${message}`, error, context);
       }
       throw error;
     }
@@ -292,10 +301,11 @@ export class WorkoutAPIService {
         })),
       } as WorkoutSession;
     } catch (error) {
+      const { message, context } = extractAxiosErrorContext(error);
       if (axios.isAxiosError(error) && error.response?.status === 401) {
-        console.log("[WorkoutAPI] Unauthorized fetching workout session");
+        logger.warn(TAG, `Unauthorized fetching workout session — ${message}`, context);
       } else {
-        console.log("[WorkoutAPI] Failed to fetch workout session", error);
+        logger.error(TAG, `Failed to fetch workout session — ${message}`, error, context);
       }
       throw error;
     }

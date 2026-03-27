@@ -1,25 +1,25 @@
+import { FlowState } from "@/app/forgot-password";
+import createAuthThemedStyles from "@/styles/auth.styles";
+import {
+  VerificationCodeFormData,
+  verificationCodeSchema,
+} from "@/types/authSchemas";
+import { useSignIn } from "@clerk/clerk-expo";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { router } from "expo-router";
+import { useForm } from "react-hook-form";
 import {
   ActivityIndicator,
   Pressable,
   SafeAreaView,
   ScrollView,
-  View,
   Text,
+  View,
 } from "react-native";
 import { ControlledInput } from "../ui/ControlledInput";
 import CustomKeyboardAvoidingView from "../ui/CustomKeyboardAvoidingView";
 import { ErrorMessage } from "../ui/ErrorMessage";
 import { InfoMessage } from "../ui/InfoMessage";
-import createAuthThemedStyles from "@/styles/auth.styles";
-import {
-  VerificationCodeFormData,
-  verificationCodeSchema,
-} from "@/app/types/authSchemas";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
-import { useSignIn } from "@clerk/clerk-expo";
-import { FlowState } from "@/app/forgot-password";
 
 interface PasswordResetCodeScreenProps {
   email: string;
