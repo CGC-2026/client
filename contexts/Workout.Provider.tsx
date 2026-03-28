@@ -173,9 +173,9 @@ const WorkoutProviderInner: React.FC<{ apiClient: AxiosInstance; children: React
       const sessionId: string = result?.id ?? `local-${Date.now()}`;
       setCurrentSessionId(sessionId);
       logger.info(TAG, "Session started", { sessionId, workoutTypeId });
-    } catch (error) {
+    } catch {
       const localId = `local-${Date.now()}`;
-      logger.error(TAG, "Failed to create session on server, using local ID", error, { localId });
+      logger.warn(TAG, "Failed to create session on server, using local ID", { localId });
       setCurrentSessionId(localId);
     }
 

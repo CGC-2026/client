@@ -46,9 +46,9 @@ function SentryUserSync() {
         email: user.primaryEmailAddress?.emailAddress,
       });
     } else {
-      Sentry.setUser(null);
+      Sentry.setUser(null); 
     }
-  }, [isSignedIn, user?.id]);
+  }, [isSignedIn, user?.id, user?.primaryEmailAddress?.emailAddress]);
 
   return null;
 }
