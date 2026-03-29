@@ -1,5 +1,6 @@
 import { ble } from "@/constants/BLE";
 import { connectDeviceWithTimeout, ensurePoweredOn } from "@/lib/BLE";
+import { logger } from "@/lib/logger";
 import { useMachine } from "@xstate/react";
 import {
   createContext,
@@ -14,6 +15,8 @@ import { BleManager, Device, Subscription } from "react-native-ble-plx";
 import { createMachine } from "xstate";
 import { BLEContextType } from "./BLE.Provider";
 import { useStorage } from "./Storage.Provider";
+
+const TAG = "BLE";
 
 // Define event types
 type BLEEvent =
@@ -121,9 +124,10 @@ export const IOSBleProvider: React.FC<{
 
             setPairedDevice(readyDevice);
             send({ type: "CONNECTED" });
+            logger.info(TAG, "Recovered existing connected device", { deviceId: device.id, deviceName: device.name });
 
-            // Set up disconnect listener
-            const sub = readyDevice.onDisconnected((error) => {
+            const sub = readyDevice.onDisconnected(() => {
+              logger.info(TAG, "Device disconnected", { deviceId: readyDevice.id, deviceName: readyDevice.name });
               setPairedDevice(null);
               send({ type: "DISCONNECTED" });
             });
@@ -136,11 +140,7 @@ export const IOSBleProvider: React.FC<{
 
             return;
           } catch (recoverError) {
-            // Fall through to lastDeviceId reconnect attempt.
-            console.error(
-              "[BLE] Failed to recover existing connected device:",
-              recoverError,
-            );
+            logger.warn(TAG, "Failed to recover existing connected device, falling back to lastDeviceId", { deviceId: device.id });
           }
         }
 
@@ -161,9 +161,10 @@ export const IOSBleProvider: React.FC<{
 
               setPairedDevice(connected);
               send({ type: "CONNECTED" });
+              logger.info(TAG, "Auto-reconnected to last device", { deviceId: connected.id, deviceName: connected.name });
 
-              // Set up disconnect listener
-              const sub = connected.onDisconnected((error) => {
+              const sub = connected.onDisconnected(() => {
+                logger.info(TAG, "Device disconnected", { deviceId: connected.id, deviceName: connected.name });
                 setPairedDevice(null);
                 send({ type: "DISCONNECTED" });
               });
@@ -179,7 +180,7 @@ export const IOSBleProvider: React.FC<{
           }
         }
       } catch (error) {
-        console.error("[BLE] Failed to recover connection state:", error);
+        logger.error(TAG, "Failed to recover connection state on mount", error);
       }
     };
 
@@ -245,10 +246,11 @@ export const IOSBleProvider: React.FC<{
       setPairedDevice(readyDevice);
       await setLastDeviceId(readyDevice.id);
       send({ type: "CONNECTED" });
+      logger.info(TAG, "Manual iOS recovery succeeded", { deviceId: readyDevice.id, deviceName: readyDevice.name });
 
-      // Replace disconnect listener (if any).
       pairedDeviceDisconnectSubRef.current?.remove();
       pairedDeviceDisconnectSubRef.current = readyDevice.onDisconnected(() => {
+        logger.info(TAG, "Device disconnected", { deviceId: readyDevice.id, deviceName: readyDevice.name });
         setPairedDevice(null);
         send({ type: "DISCONNECTED" });
       });
@@ -260,7 +262,7 @@ export const IOSBleProvider: React.FC<{
         message.includes("Operation was cancelled") ||
         message.toLowerCase().includes("not connected");
       if (!isExpected) {
-        console.error("[BLE] Manual iOS recovery failed:", error);
+        logger.error(TAG, "Manual iOS recovery failed", error);
       }
       return false;
     } finally {
@@ -296,7 +298,7 @@ export const IOSBleProvider: React.FC<{
         { allowDuplicates: false },
         (error, device) => {
           if (error) {
-            console.error("Scan error:", error);
+            logger.error(TAG, "Scan error", error);
             send({ type: "STOP" });
             return;
           }
@@ -322,7 +324,7 @@ export const IOSBleProvider: React.FC<{
 
       return true;
     } catch (error) {
-      console.error("Error in findDevices:", error);
+      logger.error(TAG, "Error starting device scan", error);
       send({ type: "STOP" });
       return false;
     }
@@ -334,7 +336,7 @@ export const IOSBleProvider: React.FC<{
         manager.stopDeviceScan();
         send({ type: "STOP" });
       } catch (error) {
-        console.error("Error stopping scan:", error);
+        logger.error(TAG, "Error stopping scan", error);
       }
     }
 
@@ -430,24 +432,24 @@ export const IOSBleProvider: React.FC<{
         send({ type: "DISCONNECTED" });
       });
 
-      // Save device ID to storage for auto-reconnect
       await setLastDeviceId(connectedDevice.id);
 
       setPairedDevice(connectedDevice);
       send({ type: "CONNECTED" });
+      logger.info(TAG, "Device paired successfully", { deviceId: connectedDevice.id, deviceName: connectedDevice.name });
       return true;
     } catch (e: any) {
-      // Check if this is a bonding mismatch error (error 200)
       const isBondingError =
         e?.errorCode === 200 ||
         e?.message?.toLowerCase().includes("pairing information") ||
         e?.message?.toLowerCase().includes("peer removed pairing");
 
       if (isBondingError) {
-        console.error("[BLE] Bonding mismatch detected (error 200):", {
-          error: e,
+        logger.error(TAG, "Bonding mismatch detected", e, {
           message: e?.message,
           errorCode: e?.errorCode,
+          deviceId: device.id,
+          deviceName: device.name,
         });
 
         // Clean up any partial connection
@@ -455,10 +457,7 @@ export const IOSBleProvider: React.FC<{
           try {
             await connectedDevice.cancelConnection();
           } catch (disconnectError) {
-            console.error(
-              "[BLE] Error disconnecting after bonding error:",
-              disconnectError,
-            );
+            logger.warn(TAG, "Error disconnecting after bonding error", { disconnectError });
           }
         }
 
@@ -479,27 +478,19 @@ export const IOSBleProvider: React.FC<{
         return false;
       }
 
-      // Not a bonding error - log and fail
-      console.error("[BLE] Error pairing with device:", {
-        error: e,
+      logger.error(TAG, "Error pairing with device", e, {
         message: e?.message,
         errorCode: e?.errorCode,
         reason: e?.reason,
-        iosError: e?.iosError,
-        attError: e?.attError,
         deviceId: device.id,
         deviceName: device.name,
       });
 
-      // If connection was established but something else failed, disconnect
       if (connectedDevice) {
         try {
           await connectedDevice.cancelConnection();
         } catch (disconnectError) {
-          console.error(
-            "[BLE] Error disconnecting after pairing error:",
-            disconnectError,
-          );
+          logger.warn(TAG, "Error disconnecting after pairing error", { disconnectError });
         }
       }
       send({ type: "FAIL" });
@@ -523,10 +514,11 @@ export const IOSBleProvider: React.FC<{
 
       // Clear the stored device ID since we're manually disconnecting
       await setLastDeviceId(null);
+      logger.info(TAG, "Device disconnected by user");
 
       return true;
     } catch (e) {
-      console.error("Error disconnecting from device:", e);
+      logger.error(TAG, "Error disconnecting from device", e);
       return false;
     }
   };
@@ -537,7 +529,7 @@ export const IOSBleProvider: React.FC<{
     characteristicUUID: string,
   ): Promise<string | null> => {
     if (!pairedDevice) {
-      console.error("[BLE] Cannot read characteristic: no paired device");
+      logger.warn(TAG, "Cannot read characteristic: no paired device");
       return null;
     }
 
@@ -548,7 +540,7 @@ export const IOSBleProvider: React.FC<{
       );
       return characteristic.value;
     } catch (error) {
-      console.error("[BLE] Error reading characteristic:", error);
+      logger.error(TAG, "Error reading characteristic", error, { serviceUUID, characteristicUUID });
       return null;
     }
   };
@@ -559,7 +551,7 @@ export const IOSBleProvider: React.FC<{
     base64Data: string,
   ): Promise<boolean> => {
     if (!pairedDevice) {
-      console.error("[BLE] Cannot write characteristic: no paired device");
+      logger.warn(TAG, "Cannot write characteristic: no paired device");
       return false;
     }
 
@@ -571,7 +563,7 @@ export const IOSBleProvider: React.FC<{
       );
       return true;
     } catch (error) {
-      console.error("[BLE] Error writing characteristic:", error);
+      logger.error(TAG, "Error writing characteristic", error, { serviceUUID, characteristicUUID });
       return false;
     }
   };
@@ -582,20 +574,17 @@ export const IOSBleProvider: React.FC<{
     callback: (data: string | null) => void,
   ): Promise<(() => void) | null> => {
     if (!pairedDevice) {
-      console.error(
-        "[BLE] Cannot subscribe to characteristic: no paired device",
-      );
+      logger.warn(TAG, "Cannot subscribe to characteristic: no paired device");
       return null;
     }
 
     try {
-      // Now set up the monitor
       const subscription = pairedDevice.monitorCharacteristicForService(
         serviceUUID,
         characteristicUUID,
         (error, characteristic) => {
           if (error) {
-            console.error("[BLE] Notification error:", error);
+            logger.error(TAG, "Characteristic notification error", error, { serviceUUID, characteristicUUID });
             callback(null);
             return;
           }
@@ -604,12 +593,11 @@ export const IOSBleProvider: React.FC<{
         },
       );
 
-      // Return cleanup function
       return () => {
         subscription.remove();
       };
     } catch (error) {
-      console.error("[BLE] Error subscribing to characteristic:", error);
+      logger.error(TAG, "Error subscribing to characteristic", error, { serviceUUID, characteristicUUID });
       return null;
     }
   };
@@ -624,7 +612,7 @@ export const IOSBleProvider: React.FC<{
         .filter((device) => {
           return device.rssi !== null;
         })
-        // make sure the samee device is not in the list twice
+        // make sure the same device is not in the list twice
         .filter(
           (device, index, self) =>
             index === self.findIndex((t) => t.id === device.id),

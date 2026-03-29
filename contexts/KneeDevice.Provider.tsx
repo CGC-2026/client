@@ -1,5 +1,6 @@
 import { DEFAULT_SAMPLE_RATE } from "@/constants/BLE";
 import { useBLE } from "@/contexts/BLE.Provider";
+import { logger } from "@/lib/logger";
 import { KneeDeviceService } from "@/services/kneeDevice.service";
 import type { SensorData } from "@/types/sensor.types";
 import React, {
@@ -12,6 +13,8 @@ import React, {
   useState,
 } from "react";
 import { Device } from "react-native-ble-plx";
+
+const TAG = "KneeDevice";
 
 export interface KneeDeviceContextType {
   /** Currently connected Smart Knee device or null */
@@ -66,7 +69,7 @@ export const KneeDeviceProvider: React.FC<{ children: React.ReactNode }> = ({
       try {
         cb(data);
       } catch (e) {
-        console.error("[KneeDevice] subscribeSampleData listener threw:", e);
+        logger.error(TAG, "subscribeSampleData listener threw", e);
       }
     }
   }, []);
@@ -102,9 +105,7 @@ export const KneeDeviceProvider: React.FC<{ children: React.ReactNode }> = ({
     rate: number = sampleRate,
   ): Promise<boolean> => {
     if (!ble.pairedDevice) {
-      console.error(
-        "[KneeDeviceContext] Cannot start streaming: no paired device",
-      );
+      logger.warn(TAG, "Cannot start streaming: no paired device");
       return false;
     }
 
@@ -112,21 +113,21 @@ export const KneeDeviceProvider: React.FC<{ children: React.ReactNode }> = ({
     if (success) {
       setIsStreaming(true);
       setSampleRate(rate);
+      logger.info(TAG, "Streaming started", { sampleRate: rate });
     }
     return success;
   }, [ble.pairedDevice, kneeService, sampleRate]);
 
   const stopStreaming = useCallback(async (): Promise<boolean> => {
     if (!ble.pairedDevice) {
-      console.error(
-        "[KneeDeviceContext] Cannot stop streaming: no paired device",
-      );
+      logger.warn(TAG, "Cannot stop streaming: no paired device");
       return false;
     }
 
     const success = await kneeService.stopStreaming();
     if (success) {
       setIsStreaming(false);
+      logger.info(TAG, "Streaming stopped");
     }
     return success;
   }, [ble.pairedDevice, kneeService]);

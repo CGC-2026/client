@@ -1,10 +1,10 @@
-import { signInSchema, type SignInFormData } from "@/app/types/authSchemas";
 import OAuthProviderButtons from "@/components/auth/OAuthProviderButtons";
 import { ControlledInput } from "@/components/ui/ControlledInput";
 import CustomKeyboardAvoidingView from "@/components/ui/CustomKeyboardAvoidingView";
 import Divider from "@/components/ui/Divider";
 import { ErrorMessage } from "@/components/ui/ErrorMessage";
 import createAuthThemedStyles from "@/styles/auth.styles";
+import { signInSchema, type SignInFormData } from "@/types/authSchemas";
 import { useSignIn, useSSO } from "@clerk/clerk-expo";
 import type { OAuthStrategy } from "@clerk/types";
 import { zodResolver } from "@hookform/resolvers/zod";

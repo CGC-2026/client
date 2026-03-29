@@ -1,16 +1,16 @@
 import {
-  CreateWorkoutSessionDTO,
   CreateUserCalibrationData,
+  CreateWorkoutSessionDTO,
   DEFAULT_WORKOUT_CONFIGURATION,
   EndSessionDTO,
   SaveSetDTO,
   UserCalibrationData,
   WorkoutConfiguration,
-  WorkoutSessionHistoryItem,
   WorkoutSession,
+  WorkoutSessionHistoryItem,
   WorkoutType,
 } from "@/types/workout.types";
-import axios, { AxiosInstance } from "axios";
+import { AxiosInstance } from "axios";
 
 function mapConfigToWorkoutConfiguration(config: Record<string, unknown>): WorkoutConfiguration {
   const get = (snake: string, camel: string): number | undefined => {
@@ -61,11 +61,6 @@ export class WorkoutAPIService {
         config: mapConfigToWorkoutConfiguration(item.config ?? {}),
       }));
     } catch (error) {
-      if (axios.isAxiosError(error) && error.response?.status === 401) {
-        console.log("[WorkoutAPI] Unauthorized fetching workout types");
-      } else {
-        console.log("[WorkoutAPI] Failed to fetch workout types", error);
-      }
       throw error;
     }
   }
@@ -87,14 +82,8 @@ export class WorkoutAPIService {
           standingRollAngle: response.data.standing_roll_angle,
           updatedAt: new Date(response.data.updated_at),
         };
-    } catch (error) {
-      if (axios.isAxiosError(error) && error.response?.status === 404) {
-        console.log("[WorkoutAPI] No calibration found for user");
-      } else {
-        console.log(
-          "[WorkoutAPI] Something went wrong getting calibration data",
-        );
-      }
+    } catch {
+      return undefined;
     }
   }
 
@@ -112,11 +101,6 @@ export class WorkoutAPIService {
     try {
       await this.authClient.post("/api/users/me/calibration", body);
     } catch (error) {
-      if (axios.isAxiosError(error) && error.response?.status === 401) {
-        console.log("[WorkoutAPI] Unauthorized saving calibration");
-      } else {
-        console.log("[WorkoutAPI] Failed to save calibration", error);
-      }
       throw error;
     }
   }
@@ -130,11 +114,6 @@ export class WorkoutAPIService {
       const response = await this.authClient.post("/api/workouts/sessions", body);
       return { id: response.data.id };
     } catch (error) {
-      if (axios.isAxiosError(error) && error.response?.status === 401) {
-        console.log("[WorkoutAPI] Unauthorized creating session");
-      } else {
-        console.log("[WorkoutAPI] Failed to create session", error);
-      }
       throw error;
     }
   }
@@ -158,11 +137,6 @@ export class WorkoutAPIService {
         body,
       );
     } catch (error) {
-      if (axios.isAxiosError(error) && error.response?.status === 401) {
-        console.log("[WorkoutAPI] Unauthorized saving set");
-      } else {
-        console.log("[WorkoutAPI] Failed to save set", error);
-      }
       throw error;
     }
   }
@@ -177,11 +151,6 @@ export class WorkoutAPIService {
         body,
       );
     } catch (error) {
-      if (axios.isAxiosError(error) && error.response?.status === 401) {
-        console.log("[WorkoutAPI] Unauthorized ending session");
-      } else {
-        console.log("[WorkoutAPI] Failed to end session", error);
-      }
       throw error;
     }
   }
@@ -217,11 +186,6 @@ export class WorkoutAPIService {
         totalReps: row.total_reps,
       }));
     } catch (error) {
-      if (axios.isAxiosError(error) && error.response?.status === 401) {
-        console.log("[WorkoutAPI] Unauthorized fetching session history");
-      } else {
-        console.log("[WorkoutAPI] Failed to fetch session history", error);
-      }
       throw error;
     }
   }
@@ -292,11 +256,6 @@ export class WorkoutAPIService {
         })),
       } as WorkoutSession;
     } catch (error) {
-      if (axios.isAxiosError(error) && error.response?.status === 401) {
-        console.log("[WorkoutAPI] Unauthorized fetching workout session");
-      } else {
-        console.log("[WorkoutAPI] Failed to fetch workout session", error);
-      }
       throw error;
     }
   }

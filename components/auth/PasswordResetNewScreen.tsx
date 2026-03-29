@@ -1,21 +1,21 @@
-import {
-  View,
-  Text,
-  Pressable,
-  ScrollView,
-  ActivityIndicator,
-} from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
 import { ControlledInput } from "@/components/ui/ControlledInput";
-import { InfoMessage } from "@/components/ui/InfoMessage";
-import { ErrorMessage } from "@/components/ui/ErrorMessage";
 import CustomKeyboardAvoidingView from "@/components/ui/CustomKeyboardAvoidingView";
+import { ErrorMessage } from "@/components/ui/ErrorMessage";
+import { InfoMessage } from "@/components/ui/InfoMessage";
 import createAuthThemedStyles from "@/styles/auth.styles";
+import { signUpSchema } from "@/types/authSchemas";
+import { useSignIn } from "@clerk/clerk-expo";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "expo-router";
 import { useForm } from "react-hook-form";
-import { signUpSchema } from "@/app/types/authSchemas";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useSignIn } from "@clerk/clerk-expo";
+import {
+  ActivityIndicator,
+  Pressable,
+  ScrollView,
+  Text,
+  View,
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 interface PasswordResetNewScreenProps {
   email: string;

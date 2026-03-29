@@ -1,4 +1,5 @@
 import { useBLE } from "@/contexts/BLE.Provider";
+import { logger } from "@/lib/logger";
 import { BatteryData, BatteryService } from "@/services/battery.service";
 import React, {
   createContext,
@@ -8,6 +9,8 @@ import React, {
   useState,
 } from "react";
 import { Device } from "react-native-ble-plx";
+
+const TAG = "Battery";
 
 export interface BatteryContextType {
   /** Currently connected device or null */
@@ -54,15 +57,10 @@ export const BatteryProvider: React.FC<{ children: React.ReactNode }> = ({
             setLastUpdate(Date.now());
           }
         } catch (error) {
-          console.error(
-            "[Battery] Error reading initial battery level:",
-            error,
-          );
-          // Gracefully degrade - just skip initial read, subscription may still work
+          logger.error(TAG, "Error reading initial battery level", error);
         }
 
         try {
-          // Subscribe to notifications for updates
           unsubscribe = await batteryService.subscribeToBatteryLevel(
             (data: BatteryData | null) => {
               if (isMounted) {
@@ -78,11 +76,7 @@ export const BatteryProvider: React.FC<{ children: React.ReactNode }> = ({
             },
           );
         } catch (error) {
-          console.error(
-            "[Battery] Error subscribing to battery notifications:",
-            error,
-          );
-          // Clear state on subscription failure
+          logger.error(TAG, "Error subscribing to battery notifications", error);
           if (isMounted) {
             setBatteryLevel(null);
             setLastUpdate(null);

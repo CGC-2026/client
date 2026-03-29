@@ -1,23 +1,23 @@
-import { router } from "expo-router";
-import {
-  SafeAreaView,
-  ScrollView,
-  View,
-  Pressable,
-  ActivityIndicator,
-  Text,
-} from "react-native";
-import { ControlledInput } from "../ui/ControlledInput";
-import CustomKeyboardAvoidingView from "../ui/CustomKeyboardAvoidingView";
-import { ErrorMessage } from "../ui/ErrorMessage";
 import createAuthThemedStyles from "@/styles/auth.styles";
 import {
   ForgotPasswordFormData,
   forgotPasswordSchema,
-} from "@/app/types/authSchemas";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
+} from "@/types/authSchemas";
 import { useSignIn } from "@clerk/clerk-expo";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { router } from "expo-router";
+import { useForm } from "react-hook-form";
+import {
+  ActivityIndicator,
+  Pressable,
+  SafeAreaView,
+  ScrollView,
+  Text,
+  View,
+} from "react-native";
+import { ControlledInput } from "../ui/ControlledInput";
+import CustomKeyboardAvoidingView from "../ui/CustomKeyboardAvoidingView";
+import { ErrorMessage } from "../ui/ErrorMessage";
 
 interface PasswordResetEmailScreenProps {
   setEmail: (email: string) => void;
