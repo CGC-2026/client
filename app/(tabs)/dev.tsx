@@ -256,7 +256,7 @@ export default function DevScreen() {
             <Pressable
               style={[styles.clearButton, { borderColor: errorColor }]}
               onPress={handleClearData}
-              disabled={!latestSample && !testResult}
+              disabled={!latestSample && !testResult && sampleCount === 0}
             >
               <Ionicons name="trash-outline" size={20} color={errorColor} />
               <ThemedText

@@ -22,7 +22,7 @@ export default function DeviceInfoScreen() {
   // Redirect if no paired device
   useEffect(() => {
     if (!pairedDevice) {
-      router.push("/my-devices");
+      router.back();
     }
   }, [pairedDevice, router]);
 
@@ -41,7 +41,7 @@ export default function DeviceInfoScreen() {
           onPress: async () => {
             const success = await disconnectDevice();
             if (success) {
-              router.push("/my-devices");
+              router.back();
             }
           },
         },
