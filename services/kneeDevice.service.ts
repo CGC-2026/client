@@ -20,6 +20,7 @@ interface ControlState {
   stream: 0 | 1; // 0 = stop, 1 = start
   sampleRate: number; // Sample rate in Hz (e.g., 50)
   mode: StreamingMode; // Operating mode
+  reserved?: number; // 0x01 = trigger firmware recalibration
 }
 
 /**
@@ -196,6 +197,40 @@ export class KneeDeviceService {
   }
 
   /**
+   * Trigger firmware IMU recalibration.
+   * Reads the current control state and writes it back with reserved=0x01.
+   * The firmware will re-zero all angles to the user's current pose over ~1s.
+   */
+  async triggerCalibration(): Promise<boolean> {
+    const current = await this.readControlState();
+    if (!current) {
+      logger.error(TAG, "Cannot trigger calibration: failed to read control state");
+      return false;
+    }
+
+    const controlData = this.encodeControlState({
+      stream: current.stream,
+      sampleRate: current.sampleRate,
+      mode: current.mode,
+      reserved: 0x01,
+    });
+
+    const success = await this.bleProvider.writeCharacteristic(
+      ble.smartKneeServiceUUID,
+      ble.controlCharacteristicUUID,
+      controlData,
+    );
+
+    if (!success) {
+      logger.error(TAG, "Failed to trigger calibration");
+    } else {
+      logger.info(TAG, "Firmware calibration triggered");
+    }
+
+    return success;
+  }
+
+  /**
    * Encode a control state into a 4-byte buffer
    * @param state Control state to encode
    * @returns string - Base64-encoded control data
@@ -205,7 +240,7 @@ export class KneeDeviceService {
     buffer.writeUInt8(state.stream, 0);
     buffer.writeUInt8(state.sampleRate, 1);
     buffer.writeUInt8(state.mode, 2);
-    buffer.writeUInt8(0, 3); // Reserved byte
+    buffer.writeUInt8(state.reserved ?? 0, 3);
 
     return buffer.toString("base64");
   }

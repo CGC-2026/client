@@ -6,12 +6,10 @@ import type { SensorData } from "@/types/sensor.types";
 import {
   ActiveWorkoutSet,
   CreateWorkoutSessionDTO,
-  DEFAULT_USER_CALIBRATION_DATA,
   DEFAULT_WORKOUT_CONFIGURATION,
   EndSessionDTO,
   Rep,
   SaveSetDTO,
-  UserCalibrationData,
   WorkoutConfiguration,
 } from "@/types/workout.types";
 import { useQueryClient } from "@tanstack/react-query";
@@ -65,7 +63,7 @@ const WorkoutProviderInner: React.FC<{ apiClient: AxiosInstance; children: React
   apiClient,
   children,
 }) => {
-  const { subscribeSampleData, startStreaming, stopStreaming, isStreaming, sampleRate } = useKneeDevice();
+  const { subscribeSampleData, startStreaming, stopStreaming, isStreaming, isWarmingUp, sampleRate } = useKneeDevice();
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const workoutAPI = useMemo(() => new WorkoutAPIService(apiClient), [apiClient]);
@@ -85,27 +83,11 @@ const WorkoutProviderInner: React.FC<{ apiClient: AxiosInstance; children: React
     DEFAULT_WORKOUT_CONFIGURATION,
   );
   const [setError, setSetError] = useState<string | null>(null);
-  const [userCalibration, setUserCalibration] = useState<UserCalibrationData>(
-    DEFAULT_USER_CALIBRATION_DATA,
-  );
+  const isWarmingUpRef = useRef(false);
 
   useEffect(() => {
-    if (!user?.id) {
-      setUserCalibration(DEFAULT_USER_CALIBRATION_DATA);
-      return;
-    }
-    workoutAPI.getUserCalibration().then((calibration) => {
-      if (calibration) setUserCalibration(calibration);
-    }).catch((error) => {
-      logger.error(TAG, "Failed to load calibration on mount", error);
-    });
-    // workoutAPI is intentionally omitted: Clerk's getToken is not a stable
-    // reference, so workoutAPI recreates on every token refresh. Since each
-    // workoutAPI instance always fetches a fresh token per-request anyway,
-    // any version captured here is functionally identical. Calibration only
-    // needs one fetch per user session, not once per token refresh.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user?.id]);
+    isWarmingUpRef.current = isWarmingUp;
+  }, [isWarmingUp]);
 
   // Keep refs in sync so subscriber closures always see current values
   useEffect(() => {
@@ -116,10 +98,10 @@ const WorkoutProviderInner: React.FC<{ apiClient: AxiosInstance; children: React
     currentSetNumberRef.current = currentSetNumber;
   }, [currentSetNumber]);
 
-  // Buffer every sample during an active set
+  // Buffer every sample during an active set (skip warm-up window)
   useEffect(() => {
     return subscribeSampleData((data) => {
-      if (!data || !isSetActiveRef.current) return;
+      if (!data || !isSetActiveRef.current || isWarmingUpRef.current) return;
       setCurrentSetSamples((prev) => [...prev, data]);
     });
   }, [subscribeSampleData]);
@@ -136,7 +118,6 @@ const WorkoutProviderInner: React.FC<{ apiClient: AxiosInstance; children: React
     const reps = squatCoachingService.segmentSquatReps(
       currentSetSamples,
       activeConfiguration,
-      userCalibration,
     );
     setCurrentReps(reps);
   }, [
@@ -144,7 +125,6 @@ const WorkoutProviderInner: React.FC<{ apiClient: AxiosInstance; children: React
     currentSetSamples,
     activeConfiguration,
     squatCoachingService,
-    userCalibration,
   ]);
 
   const currentRepCount = currentReps.length;
@@ -255,7 +235,6 @@ const WorkoutProviderInner: React.FC<{ apiClient: AxiosInstance; children: React
       const reps = squatCoachingService.segmentSquatReps(
         setSamples,
         activeConfiguration,
-        userCalibration,
       );
 
       const setStartTime =
@@ -297,7 +276,6 @@ const WorkoutProviderInner: React.FC<{ apiClient: AxiosInstance; children: React
   }, [
     currentSetSamples,
     activeConfiguration,
-    userCalibration,
     squatCoachingService,
     stopStreaming,
     currentSessionId,

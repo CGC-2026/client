@@ -1,10 +1,8 @@
 import { logger } from "@/lib/logger";
-import { mediansForRollPitchYaw } from "@/lib/math";
-import type { SensorData } from "@/types/sensor.types";
+import { UserCalibrationData } from "@/types/workout.types";
 import { WorkoutAPIService } from "@/services/workout.service";
 
 const TAG = "Calibration";
-import { CreateUserCalibrationData, UserCalibrationData } from "@/types/workout.types";
 import React, {
   createContext,
   useCallback,
@@ -18,21 +16,26 @@ import { useAuth } from "./Auth.Provider";
 import { useAuthApiClient } from "./AuthApi.Provider";
 import { useKneeDevice } from "./KneeDevice.Provider";
 
-const CALIBRATION_DURATION_MS = 4000;
+/** Time for the firmware to complete auto-calibration after the BLE trigger. */
+const FIRMWARE_CALIBRATION_MS = 1500;
 
 /**
- * Calibration context API for standing baseline and device calibration.
+ * Calibration context API — triggers firmware-side IMU recalibration over BLE.
+ *
+ * The firmware re-zeros all angles to the user's current pose when it receives
+ * reserved=0x01 on the control characteristic.  The old client-side median
+ * collection is no longer needed; the firmware handles zeroing internally.
  */
 export interface CalibrationContextType {
-  /** Last loaded or saved calibration (null until fetched or first run). */
+  /** Last loaded calibration from the API (historical reference). */
   calibration: UserCalibrationData | null;
-  /** True from start of sampling until save completes or failure. */
+  /** True while the firmware is performing calibration (~1.5 s). */
   isCalibrating: boolean;
-  /** User-facing error (e.g. no device, auth not ready, API failure). */
+  /** User-facing error (e.g. no device, BLE write failure). */
   error: string | null;
-  /** Start streaming, collect samples for a fixed duration, then save calibration via API. */
+  /** Trigger firmware recalibration via BLE, optionally starting streaming first. */
   startCalibration: () => Promise<void>;
-  /** Fetch current user calibration from API and set calibration state. */
+  /** Fetch current user calibration from API. */
   loadCalibration: () => Promise<void>;
   /** Clear the current error message. */
   clearError: () => void;
@@ -49,9 +52,8 @@ export const CalibrationProvider: React.FC<{ children: React.ReactNode }> = ({
     device,
     isStreaming,
     startStreaming,
-    stopStreaming,
     sampleRate,
-    subscribeSampleData,
+    triggerCalibration: triggerDeviceCalibration,
   } = useKneeDevice();
 
   const [calibration, setCalibration] = useState<UserCalibrationData | null>(
@@ -60,133 +62,63 @@ export const CalibrationProvider: React.FC<{ children: React.ReactNode }> = ({
   const [isCalibrating, setIsCalibrating] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const calibrationSamplesRef = useRef<SensorData[]>([]);
   const calibrationTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const isCalibratingRef = useRef(false);
 
   const workoutAPI = useMemo(
     () => (authClient ? new WorkoutAPIService(authClient) : null),
     [authClient],
   );
 
-  // Keep ref in sync so the subscriber closure always sees current value
-  useEffect(() => {
-    isCalibratingRef.current = isCalibrating;
-  }, [isCalibrating]);
-
-  // Clear all calibration state when the authenticated user changes (sign-out or user switch).
-  // user?.id goes to undefined on sign-out and to a new value on a different sign-in,
-  // so this single dependency covers both cases without needing to track isSignedIn separately.
+  // Clear state on user change (sign-out / switch)
   useEffect(() => {
     if (calibrationTimerRef.current) {
       clearTimeout(calibrationTimerRef.current);
       calibrationTimerRef.current = null;
     }
-    isCalibratingRef.current = false;
-    calibrationSamplesRef.current = [];
     setCalibration(null);
     setIsCalibrating(false);
     setError(null);
   }, [user?.id]);
-
-  // Buffer every sample while calibrating — runs outside the React render cycle
-  useEffect(() => {
-    return subscribeSampleData((data) => {
-      if (!data || !isCalibratingRef.current) return;
-      calibrationSamplesRef.current.push(data);
-    });
-  }, [subscribeSampleData]);
 
   const startCalibration = useCallback(async () => {
     if (!device) {
       setError("No device connected");
       return;
     }
-    if (!workoutAPI) {
-      setError("Auth not ready");
-      return;
-    }
 
-    // Clear any existing timer from a previous run
     if (calibrationTimerRef.current) {
       clearTimeout(calibrationTimerRef.current);
       calibrationTimerRef.current = null;
     }
 
-    // Only stop streaming if we're currently streaming (avoids BLE stop-then-start when not needed)
-    if (isStreaming) {
-      await stopStreaming();
-    }
-
-    isCalibratingRef.current = true;
     setIsCalibrating(true);
     setError(null);
-    calibrationSamplesRef.current = [];
 
-    logger.info(TAG, "Calibration started");
-    const success = await startStreaming(sampleRate);
+    // Ensure we are streaming so the firmware has sensor data to calibrate from
+    if (!isStreaming) {
+      const started = await startStreaming(sampleRate);
+      if (!started) {
+        setIsCalibrating(false);
+        setError("Failed to start streaming");
+        return;
+      }
+    }
+
+    logger.info(TAG, "Triggering firmware calibration");
+    const success = await triggerDeviceCalibration();
     if (!success) {
-      isCalibratingRef.current = false;
       setIsCalibrating(false);
-      setError("Failed to start streaming");
+      setError("Failed to trigger device calibration");
       return;
     }
 
-    calibrationTimerRef.current = setTimeout(async () => {
+    // Wait for the firmware to finish its ~1 s auto-calibration window
+    calibrationTimerRef.current = setTimeout(() => {
       calibrationTimerRef.current = null;
-      await stopStreaming();
-
-      const samples = calibrationSamplesRef.current;
-      calibrationSamplesRef.current = [];
-
-      if (samples.length < 2) {
-        setError("Not enough samples; stand still and try again");
-        isCalibratingRef.current = false;
-        setIsCalibrating(false);
-        return;
-      }
-
-      const { roll, pitch, yaw } = mediansForRollPitchYaw(
-        samples.map((s) => s.roll),
-        samples.map((s) => s.pitch),
-        samples.map((s) => s.yaw),
-      );
-
-      const calibrationData: CreateUserCalibrationData = {
-        standingYawAngle: yaw,
-        standingPitchAngle: pitch,
-        standingRollAngle: roll,
-      };
-
-      try {
-        await workoutAPI.saveCalibration(calibrationData);
-        const data = await workoutAPI.getUserCalibration();
-        if (data) {
-          setCalibration(data);
-        }
-        setError(null);
-        logger.info(TAG, "Calibration completed", {
-          roll: calibrationData.standingRollAngle,
-          pitch: calibrationData.standingPitchAngle,
-          yaw: calibrationData.standingYawAngle,
-        });
-      } catch (e) {
-        const err = e instanceof Error ? e : new Error(String(e));
-        logger.error(TAG, "Failed to save calibration", err, { calibrationData });
-        setError("Failed to save calibration");
-      } finally {
-        isCalibratingRef.current = false;
-        setIsCalibrating(false);
-      }
-    }, CALIBRATION_DURATION_MS);
-  }, [
-    device,
-    isStreaming,
-    workoutAPI,
-    startStreaming,
-    stopStreaming,
-    sampleRate,
-  ]);
+      setIsCalibrating(false);
+      logger.info(TAG, "Firmware calibration complete");
+    }, FIRMWARE_CALIBRATION_MS);
+  }, [device, isStreaming, startStreaming, sampleRate, triggerDeviceCalibration]);
 
   const loadCalibration = useCallback(async () => {
     if (!workoutAPI) {
@@ -210,16 +142,14 @@ export const CalibrationProvider: React.FC<{ children: React.ReactNode }> = ({
     setError(null);
   }, []);
 
-  // Clear timer on unmount and stop streaming so the device does not keep streaming
   useEffect(() => {
     return () => {
       if (calibrationTimerRef.current) {
         clearTimeout(calibrationTimerRef.current);
         calibrationTimerRef.current = null;
-        stopStreaming();
       }
     };
-  }, [stopStreaming]);
+  }, []);
 
   const value: CalibrationContextType = {
     calibration,

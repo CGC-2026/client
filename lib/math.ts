@@ -1,10 +1,9 @@
 /**
- * Computes median for each of roll, pitch, and yaw angle arrays.
- * Used to derive standing angles from calibration samples (robust to outliers and flips).
+ * Computes median for each of roll (flexion), pitch (valgus/varus), and yaw (tibial rotation).
  *
- * @param rolls - Roll angles in degrees
- * @param pitches - Pitch angles in degrees
- * @param yaws - Yaw angles in degrees
+ * @param rolls - Flexion angles in degrees
+ * @param pitches - Valgus/varus angles in degrees
+ * @param yaws - Tibial rotation angles in degrees
  * @returns { roll, pitch, yaw } median values (empty array → 0)
  */
 export function mediansForRollPitchYaw(
@@ -74,18 +73,14 @@ export function movingAverage(x: number[], window: number): number[] {
 }
 
 /**
- * Computes squat depth and range of motion from angle data
+ * Computes squat depth and range of motion from flexion angle data.
  *
- * Calculates two metrics:
- * - ROM (Range of Motion): Total angular range (max - min)
- * - Depth: Maximum deviation from standing baseline angle
+ * With the new firmware, flexion (roll) is 0 at standing and increases during
+ * a squat — pass standingAngle = 0.
  *
- * @param angleSm - Smoothed angle values during the rep (e.g. roll)
- * @param standingAngle - Baseline angle when standing
+ * @param angleSm - Smoothed flexion values during the rep
+ * @param standingAngle - Baseline angle when standing (0 with new firmware)
  * @returns Object with depthDeg and romDeg in degrees
- *
- * @example
- * computeDepthAndRom([10, 20, 30, 20, 10], 10) // { depthDeg: 20, romDeg: 20 }
  */
 export function computeDepthAndRom(angleSm: number[], standingAngle: number) {
   const mean = angleSm.reduce((s, a) => s + a, 0) / angleSm.length;
@@ -102,14 +97,13 @@ export function computeDepthAndRom(angleSm: number[], standingAngle: number) {
 /**
  * Computes time spent near the bottom of a rep (pause detection).
  *
- * Finds the bottom angle (furthest from standing). A sample is part of a pause
- * only if it is within pauseThresholdDeg of bottom AND instantaneous velocity
- * is at most velThresholdDegPerS. Returns the duration (ms) of the longest
- * contiguous segment satisfying both conditions.
+ * Finds the bottom flexion angle (furthest from standing). A sample counts as
+ * paused if it is within pauseThresholdDeg of bottom AND velocity is below
+ * velThresholdDegPerS. Returns the longest contiguous pause duration.
  *
- * @param angleSm - Smoothed angle values during the rep (e.g. roll)
+ * @param angleSm - Smoothed flexion values during the rep
  * @param timestamps - Timestamps in ms, same length as angleSm, sorted ascending
- * @param standingAngle - Baseline angle when standing
+ * @param standingAngle - Baseline angle when standing (0 with new firmware)
  * @param pauseThresholdDeg - Degrees from bottom to count as "at bottom"
  * @param velThresholdDegPerS - Max absolute velocity (deg/s) to count as paused
  * @returns Time in ms of longest valid pause segment, or 0 if none

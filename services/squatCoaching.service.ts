@@ -5,87 +5,174 @@ import {
 } from "@/lib/math";
 import {
   Rep,
-  UserCalibrationData,
   WorkoutConfiguration,
 } from "@/types/workout.types";
 import type { SensorData } from "@/types/sensor.types";
 
 export class SquatCoachingService {
+  /**
+   * Segment sensor samples into individual squat reps.
+   *
+   * With the new firmware, roll (flexion) is 0 at standing and increases
+   * during a squat — no client-side standing-angle offset is needed.
+   */
   segmentSquatReps(
     samples: SensorData[],
     workoutConfiguration: WorkoutConfiguration,
-    calibration: Omit<UserCalibrationData, "userId" | "lastCalibrated">,
   ): Rep[] {
     if (!samples || samples.length < 3) return [];
   
-    const ordered = [...samples].sort((a, b) => a.timestamp - b.timestamp);
+    let ordered = [...samples].sort((a, b) => a.timestamp - b.timestamp);
     const {
       minRepDuration,
       maxRepDuration,
       minDepthAngle,
       smoothWindow,
-      minGapMs,
     } = workoutConfiguration;
-  
-    const standingAngle = calibration.standingRollAngle;
+
+    // Strip the firmware warm-up window: the first ~1 s of data after stream
+    // start may contain uncalibrated values (e.g. ~96° standing), followed by
+    // a sharp drop to near 0° once auto-calibration finishes.  Detect this by
+    // finding the first sample that settles below the standing baseline
+    // threshold (minDepthAngle) after starting high, and discard everything
+    // before it.
+    const WARMUP_BASELINE = minDepthAngle;
+    if (ordered.length > 0 && ordered[0].roll > WARMUP_BASELINE) {
+      let settledIdx = 0;
+      for (let i = 1; i < ordered.length; i++) {
+        if (ordered[i].roll <= WARMUP_BASELINE) {
+          settledIdx = i;
+          break;
+        }
+      }
+      if (settledIdx > 0) {
+        ordered = ordered.slice(settledIdx);
+      }
+    }
+
+    if (ordered.length < 3) return [];
+
     const angleRaw = ordered.map((s) => s.roll);
     const angleSm = movingAverage(angleRaw, smoothWindow);
   
-    // Convert to "depth signal" — how far from standing, always positive
-    const depth = angleSm.map((a) => Math.abs(a - standingAngle));
+    // Firmware outputs roll = 0 at standing, increasing during squat (always non-negative).
+    // Depth signal is simply the smoothed flexion angle.
+    const depth = [...angleSm];
   
-    // Find all local peaks in the depth signal
-    // A peak is valid if it exceeds minDepthAngle and is a local max
-    // within a window of at least minRepDuration/2 ms on each side
-    const peaks: number[] = [];
+    // ── 1. Find all local peaks ──
+    // A peak is valid if it exceeds minDepthAngle and is the local max
+    // within a time window of minRepDuration/2 on each side.
+    const rawPeaks: number[] = [];
     for (let i = 1; i < depth.length - 1; i++) {
       if (depth[i] < minDepthAngle) continue;
-      
-      // Find the window around this sample based on time
       const t = ordered[i].timestamp;
       let lo = i, hi = i;
       while (lo > 0 && t - ordered[lo].timestamp < minRepDuration / 2) lo--;
       while (hi < depth.length - 1 && ordered[hi].timestamp - t < minRepDuration / 2) hi++;
-  
-      // Check this is the maximum in that window
       let isMax = true;
       for (let j = lo; j <= hi; j++) {
         if (depth[j] > depth[i]) { isMax = false; break; }
       }
-      if (isMax) peaks.push(i);
+      if (isMax) rawPeaks.push(i);
     }
-  
-    // For each peak, find the rep boundaries:
-    // start = last time depth crossed minDepthAngle/2 before peak
-    // end = next time depth crosses minDepthAngle/2 after peak
-    const ENTRY_THRESHOLD = minDepthAngle * 0.25; // 25% of min depth
+
+    // ── 2. Deduplicate peaks ──
+    // a) Collapse peaks within minRepDuration ms (plateau duplicates).
+    let peaks: number[] = [];
+    for (const p of rawPeaks) {
+      if (peaks.length === 0) { peaks.push(p); continue; }
+      const prev = peaks[peaks.length - 1];
+      if (ordered[p].timestamp - ordered[prev].timestamp < minRepDuration) {
+        if (depth[p] > depth[prev]) peaks[peaks.length - 1] = p;
+      } else {
+        peaks.push(p);
+      }
+    }
+
+    if (peaks.length === 0) return [];
+
+    // b) Merge peaks whose intervening valley never drops below minDepthAngle.
+    //    If the signal stays elevated between two peaks they belong to the same
+    //    rep (e.g. a flat-top squat hold, or low-amplitude noise).
+    let merged = true;
+    while (merged) {
+      merged = false;
+      const next: number[] = [peaks[0]];
+      for (let k = 1; k < peaks.length; k++) {
+        const prev = next[next.length - 1];
+        let valleyMin = Infinity;
+        for (let i = prev + 1; i < peaks[k]; i++) {
+          if (depth[i] < valleyMin) valleyMin = depth[i];
+        }
+        if (valleyMin >= minDepthAngle) {
+          if (depth[peaks[k]] > depth[prev]) next[next.length - 1] = peaks[k];
+          merged = true;
+        } else {
+          next.push(peaks[k]);
+        }
+      }
+      peaks = next;
+    }
+
+    // ── 3. Find valley-based rep boundaries ──
+    // Between each pair of consecutive peaks, find the index of the minimum
+    // depth value (the valley). Use valleys as the natural split points
+    // between reps.  For the first rep, scan backward from the first peak
+    // to the start of the data.  For the last rep, scan forward from the
+    // last peak to the end of the data.
+    const valleys: number[] = [];
+    for (let k = 0; k < peaks.length - 1; k++) {
+      let minIdx = peaks[k] + 1;
+      for (let i = peaks[k] + 1; i < peaks[k + 1]; i++) {
+        if (depth[i] < depth[minIdx]) minIdx = i;
+      }
+      valleys.push(minIdx);
+    }
+
     const reps: Rep[] = [];
     let repId = 0;
-    let lastRepEndTime: number | null = null;
-  
-    for (const peakIdx of peaks) {
-      // Find start: scan backwards for last crossing below entry threshold
-      let startIdx = peakIdx;
-      for (let i = peakIdx - 1; i >= 0; i--) {
-        if (depth[i] <= ENTRY_THRESHOLD) { startIdx = i; break; }
+
+    for (let k = 0; k < peaks.length; k++) {
+      const peakIdx = peaks[k];
+
+      // Prominence check: the peak must rise at least minDepthAngle above
+      // the higher of its two adjacent valleys.  This filters noise bumps
+      // (e.g. 16° blip between real 90°+ squats).
+      const leftValley = k > 0 ? depth[valleys[k - 1]] : 0;
+      const rightValley = k < valleys.length ? depth[valleys[k]] : 0;
+      const prominence = depth[peakIdx] - Math.max(leftValley, rightValley);
+      if (prominence < minDepthAngle) continue;
+
+      // Start boundary: valley before this peak, or scan to data start
+      let startIdx: number;
+      if (k > 0) {
+        startIdx = valleys[k - 1];
+      } else {
+        startIdx = 0;
+        for (let i = peakIdx - 1; i >= 0; i--) {
+          if (depth[i] <= depth[startIdx]) startIdx = i;
+          if (depth[i] < minDepthAngle * 0.5) { startIdx = i; break; }
+        }
       }
-  
-      // Find end: scan forwards for next crossing below entry threshold  
-      let endIdx = peakIdx;
-      for (let i = peakIdx + 1; i < depth.length; i++) {
-        if (depth[i] <= ENTRY_THRESHOLD) { endIdx = i; break; }
+
+      // End boundary: valley after this peak, or scan to data end
+      let endIdx: number;
+      if (k < valleys.length) {
+        endIdx = valleys[k];
+      } else {
+        endIdx = depth.length - 1;
+        for (let i = peakIdx + 1; i < depth.length; i++) {
+          if (depth[i] <= depth[endIdx]) endIdx = i;
+          if (depth[i] < minDepthAngle * 0.5) { endIdx = i; break; }
+        }
       }
-  
+
       const startT = ordered[startIdx].timestamp;
       const endT = ordered[endIdx].timestamp;
       const durationMs = endT - startT;
-  
-      // Gap check
-      if (lastRepEndTime !== null && startT - lastRepEndTime < minGapMs) continue;
-  
-      // Duration check
+
       if (durationMs < minRepDuration || durationMs > maxRepDuration) continue;
-  
+
       const repSamples = ordered.slice(startIdx, endIdx + 1);
       const repAngleSm = angleSm.slice(startIdx, endIdx + 1);
       const repTimestamps = repSamples.map((s) => s.timestamp);
@@ -114,8 +201,8 @@ export class SquatCoachingService {
         ...repYawsSm.map((y) => Math.abs(y - yawAtStart))
       );
   
-      const { depthDeg, romDeg } = computeDepthAndRom(repAngleSm, standingAngle);
-      const pauseMs = computePauseMs(repAngleSm, repTimestamps, standingAngle, 5, 15);
+      const { depthDeg, romDeg } = computeDepthAndRom(repAngleSm, 0);
+      const pauseMs = computePauseMs(repAngleSm, repTimestamps, 0, 5, 15);
   
       const bottomT = ordered[peakIdx].timestamp;
       const downMs = Math.max(0, bottomT - startT);
@@ -148,8 +235,6 @@ export class SquatCoachingService {
           peakHipRotation,
         },
       });
-  
-      lastRepEndTime = endT;
     }
   
     return reps;

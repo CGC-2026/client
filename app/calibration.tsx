@@ -16,7 +16,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-const CALIBRATION_DURATION_MS = 4000;
+const CALIBRATION_DURATION_MS = 1500;
 
 const instructions = [
   {
@@ -66,12 +66,12 @@ export default function CalibrationScreen() {
     } else {
       if (!calibrationStartedRef.current) return;
       Animated.timing(progressAnim, {
-        toValue: calibration ? 1 : 0,
+        toValue: error ? 0 : 1,
         duration: 200,
         useNativeDriver: false,
       }).start();
     }
-  }, [isCalibrating]);
+  }, [isCalibrating, error]);
 
   const handleDone = useCallback(() => {
     router.back();
@@ -84,7 +84,7 @@ export default function CalibrationScreen() {
     textSecondaryColor,
   );
 
-  const showSuccess = !isCalibrating && calibration && calibrationStartedRef.current;
+  const showSuccess = !isCalibrating && calibrationStartedRef.current && !error;
 
   return (
     <ThemedView style={styles.container}>
@@ -96,7 +96,7 @@ export default function CalibrationScreen() {
         >
           <ScreenHeader
             title="Calibrate Sleeve"
-            subtitle="Follow these steps, then hold still for 4 seconds while we record your standing baseline."
+            subtitle="Follow these steps, then hold still while the device calibrates to your standing pose."
           />
 
           {/* Instructions */}
@@ -138,9 +138,9 @@ export default function CalibrationScreen() {
             </View>
             <ThemedText style={styles.progressLabel}>
               {isCalibrating
-                ? "Recording… hold still"
+                ? "Calibrating device… hold still"
                 : showSuccess
-                  ? "Calibration saved"
+                  ? "Calibration complete"
                   : "Press the button below to begin"}
             </ThemedText>
           </View>
@@ -150,7 +150,7 @@ export default function CalibrationScreen() {
             <View style={[styles.resultCard, { borderColor: successColor, backgroundColor: cardColor }]}>
               <Ionicons name="checkmark-circle" size={24} color={successColor} />
               <ThemedText style={[styles.resultText, { color: successColor }]}>
-                Standing baseline recorded successfully.
+                Device calibrated successfully. Angles are now zeroed to your current pose.
               </ThemedText>
             </View>
           )}
