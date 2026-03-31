@@ -16,17 +16,24 @@ import { Device } from "react-native-ble-plx";
 
 const TAG = "KneeDevice";
 
+/** Duration of the firmware warm-up / auto-calibration window after stream start. */
+const WARMUP_DURATION_MS = 1200;
+
 export interface KneeDeviceContextType {
   /** Currently connected Smart Knee device or null */
   device: Device | null;
   /** Whether streaming is currently active */
   isStreaming: boolean;
+  /** True for the first ~1s after stream start while the firmware auto-calibrates */
+  isWarmingUp: boolean;
   /** Current sample rate in Hz */
   sampleRate: number;
   /** Start streaming at the specified rate */
   startStreaming: (rate?: number) => Promise<boolean>;
   /** Stop streaming */
   stopStreaming: () => Promise<boolean>;
+  /** Trigger firmware IMU recalibration (re-zeros angles to current pose) */
+  triggerCalibration: () => Promise<boolean>;
   /** Set the sample rate (takes effect on next start) */
   setSampleRate: (rate: number) => void;
   /** Read the current control state from device */
@@ -51,7 +58,9 @@ export const KneeDeviceProvider: React.FC<{ children: React.ReactNode }> = ({
 }) => {
   const ble = useBLE();
   const [isStreaming, setIsStreaming] = useState(false);
+  const [isWarmingUp, setIsWarmingUp] = useState(false);
   const [sampleRate, setSampleRate] = useState(DEFAULT_SAMPLE_RATE);
+  const warmupTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const sampleListenersRef = useRef<Set<(data: SensorData | null) => void>>(new Set());
 
   // Create service instance (memoized to prevent recreation)
@@ -101,6 +110,15 @@ export const KneeDeviceProvider: React.FC<{ children: React.ReactNode }> = ({
     };
   }, [ble.pairedDevice?.id, notifyListeners]);
 
+  const beginWarmup = useCallback(() => {
+    if (warmupTimerRef.current) clearTimeout(warmupTimerRef.current);
+    setIsWarmingUp(true);
+    warmupTimerRef.current = setTimeout(() => {
+      warmupTimerRef.current = null;
+      setIsWarmingUp(false);
+    }, WARMUP_DURATION_MS);
+  }, []);
+
   const startStreaming = useCallback(async (
     rate: number = sampleRate,
   ): Promise<boolean> => {
@@ -113,10 +131,11 @@ export const KneeDeviceProvider: React.FC<{ children: React.ReactNode }> = ({
     if (success) {
       setIsStreaming(true);
       setSampleRate(rate);
+      beginWarmup();
       logger.info(TAG, "Streaming started", { sampleRate: rate });
     }
     return success;
-  }, [ble.pairedDevice, kneeService, sampleRate]);
+  }, [ble.pairedDevice, kneeService, sampleRate, beginWarmup]);
 
   const stopStreaming = useCallback(async (): Promise<boolean> => {
     if (!ble.pairedDevice) {
@@ -127,10 +146,27 @@ export const KneeDeviceProvider: React.FC<{ children: React.ReactNode }> = ({
     const success = await kneeService.stopStreaming();
     if (success) {
       setIsStreaming(false);
+      if (warmupTimerRef.current) {
+        clearTimeout(warmupTimerRef.current);
+        warmupTimerRef.current = null;
+      }
+      setIsWarmingUp(false);
       logger.info(TAG, "Streaming stopped");
     }
     return success;
   }, [ble.pairedDevice, kneeService]);
+
+  const triggerCalibration = useCallback(async (): Promise<boolean> => {
+    if (!ble.pairedDevice) {
+      logger.warn(TAG, "Cannot trigger calibration: no paired device");
+      return false;
+    }
+    const success = await kneeService.triggerCalibration();
+    if (success) {
+      beginWarmup();
+    }
+    return success;
+  }, [ble.pairedDevice, kneeService, beginWarmup]);
 
   const readControlState = useCallback(async (): Promise<void> => {
     const state = await kneeService.readControlState();
@@ -148,12 +184,20 @@ export const KneeDeviceProvider: React.FC<{ children: React.ReactNode }> = ({
     [],
   );
 
+  useEffect(() => {
+    return () => {
+      if (warmupTimerRef.current) clearTimeout(warmupTimerRef.current);
+    };
+  }, []);
+
   const contextValue: KneeDeviceContextType = {
     device: ble.pairedDevice,
     isStreaming,
+    isWarmingUp,
     sampleRate,
     startStreaming,
     stopStreaming,
+    triggerCalibration,
     setSampleRate,
     readControlState,
     subscribeSampleData,

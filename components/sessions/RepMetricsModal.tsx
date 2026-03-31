@@ -79,12 +79,12 @@ function buildSections(rep: Rep): MetricSection[] {
       title: "Range of Motion",
       items: [
         { label: "Total ROM", value: `${formatNumber(metrics.romDeg, 1)}°` },
-        { label: "Pitch ROM", value: `${formatNumber(metrics.pitchRomDeg, 1)}°` },
-        { label: "Max Pitch", value: `${formatNumber(metrics.maxPitchDeg, 1)}°` },
-        { label: "Min Pitch", value: `${formatNumber(metrics.minPitchDeg, 1)}°` },
-        { label: "Roll ROM", value: `${formatNumber(metrics.rollRomDeg, 1)}°` },
-        { label: "Max Roll", value: `${formatNumber(metrics.maxRollDeg, 1)}°` },
-        { label: "Min Roll", value: `${formatNumber(metrics.minRollDeg, 1)}°` },
+        { label: "Flexion ROM", value: `${formatNumber(metrics.rollRomDeg, 1)}°` },
+        { label: "Max Flexion", value: `${formatNumber(metrics.maxRollDeg, 1)}°` },
+        { label: "Min Flexion", value: `${formatNumber(metrics.minRollDeg, 1)}°` },
+        { label: "Valgus/Varus ROM", value: `${formatNumber(metrics.pitchRomDeg, 1)}°` },
+        { label: "Max Valgus", value: `${formatNumber(metrics.maxPitchDeg, 1)}°` },
+        { label: "Min Valgus", value: `${formatNumber(metrics.minPitchDeg, 1)}°` },
       ],
     },
     {
@@ -92,12 +92,12 @@ function buildSections(rep: Rep): MetricSection[] {
       items: [
         { label: "Peak Valgus", value: `${formatNumber(metrics.peakValgus, 1)}°` },
         {
-          label: "Peak Hip Rotation",
+          label: "Peak Tibial Rotation",
           value: `${formatNumber(metrics.peakHipRotation, 1)}°`,
         },
-        { label: "Yaw ROM", value: `${formatNumber(metrics.yawRomDeg, 1)}°` },
-        { label: "Max Yaw", value: `${formatNumber(metrics.maxYawDeg, 1)}°` },
-        { label: "Min Yaw", value: `${formatNumber(metrics.minYawDeg, 1)}°` },
+        { label: "Rotation ROM", value: `${formatNumber(metrics.yawRomDeg, 1)}°` },
+        { label: "Max Rotation", value: `${formatNumber(metrics.maxYawDeg, 1)}°` },
+        { label: "Min Rotation", value: `${formatNumber(metrics.minYawDeg, 1)}°` },
       ],
     },
   ];
@@ -319,20 +319,20 @@ function RotationGraphs({ rep, themedStyles }: { rep: Rep; themedStyles: any }) 
       <View style={{ paddingTop: 16 }}>
         <AxisGraph 
           data={rolls} 
-          title="FLEXION / EXTENSION (ROLL)" 
+          title="FLEXION / EXTENSION" 
           color="#2196f3" 
           themedStyles={themedStyles} 
         />
         <AxisGraph 
           data={pitches} 
-          title="VARUS / VALGUS (PITCH)" 
+          title="VALGUS / VARUS" 
           color="#4caf50" 
           themedStyles={themedStyles} 
           showSafetyZones={true} 
         />
         <AxisGraph 
           data={yaws} 
-          title="INTERNAL ROTATION (YAW DEVIATION)" 
+          title="TIBIAL ROTATION" 
           color="#f44336" 
           themedStyles={themedStyles}
           showSafetyZones={true} 

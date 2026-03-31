@@ -27,7 +27,7 @@ import "react-native-reanimated";
 
 Sentry.init({
   dsn: env.EXPO_PUBLIC_SENTRY_DSN,
-
+  environment: env.ENV,
   sendDefaultPii: true,
   enableLogs: true,
 });

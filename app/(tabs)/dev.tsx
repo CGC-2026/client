@@ -21,6 +21,7 @@ export default function DevScreen() {
   const {
     device,
     isStreaming,
+    isWarmingUp,
     sampleRate,
     startStreaming,
     stopStreaming,
@@ -255,7 +256,7 @@ export default function DevScreen() {
             <Pressable
               style={[styles.clearButton, { borderColor: errorColor }]}
               onPress={handleClearData}
-              disabled={!latestSample && !testResult}
+              disabled={!latestSample && !testResult && sampleCount === 0}
             >
               <Ionicons name="trash-outline" size={20} color={errorColor} />
               <ThemedText
@@ -323,19 +324,19 @@ export default function DevScreen() {
             {calibration ? (
               <View style={styles.dataSection}>
                 <View style={styles.dataRow}>
-                  <ThemedText style={styles.dataLabel}>Standing Roll:</ThemedText>
+                  <ThemedText style={styles.dataLabel}>Standing Flexion:</ThemedText>
                   <ThemedText style={styles.dataValue}>
                     {calibration.standingRollAngle.toFixed(3)}°
                   </ThemedText>
                 </View>
                 <View style={styles.dataRow}>
-                  <ThemedText style={styles.dataLabel}>Standing Pitch:</ThemedText>
+                  <ThemedText style={styles.dataLabel}>Standing Valgus:</ThemedText>
                   <ThemedText style={styles.dataValue}>
                     {calibration.standingPitchAngle.toFixed(3)}°
                   </ThemedText>
                 </View>
                 <View style={styles.dataRow}>
-                  <ThemedText style={styles.dataLabel}>Standing Yaw:</ThemedText>
+                  <ThemedText style={styles.dataLabel}>Standing Rotation:</ThemedText>
                   <ThemedText style={styles.dataValue}>
                     {calibration.standingYawAngle.toFixed(3)}°
                   </ThemedText>
@@ -456,19 +457,19 @@ export default function DevScreen() {
                   </ThemedText>
                 </View>
                 <View style={styles.dataRow}>
-                  <ThemedText style={styles.dataLabel}>Roll max / min:</ThemedText>
+                  <ThemedText style={styles.dataLabel}>Flexion max / min:</ThemedText>
                   <ThemedText style={styles.dataValue}>
                     {lastRep.metrics.maxRollDeg.toFixed(1)}° / {lastRep.metrics.minRollDeg.toFixed(1)}°
                   </ThemedText>
                 </View>
                 <View style={styles.dataRow}>
-                  <ThemedText style={styles.dataLabel}>Pitch max / min:</ThemedText>
+                  <ThemedText style={styles.dataLabel}>Valgus max / min:</ThemedText>
                   <ThemedText style={styles.dataValue}>
                     {lastRep.metrics.maxPitchDeg.toFixed(1)}° / {lastRep.metrics.minPitchDeg.toFixed(1)}°
                   </ThemedText>
                 </View>
                 <View style={styles.dataRow}>
-                  <ThemedText style={styles.dataLabel}>Pitch ROM:</ThemedText>
+                  <ThemedText style={styles.dataLabel}>Valgus ROM:</ThemedText>
                   <ThemedText style={styles.dataValue}>
                     {lastRep.metrics.pitchRomDeg.toFixed(1)}°
                   </ThemedText>
@@ -480,19 +481,19 @@ export default function DevScreen() {
                   </ThemedText>
                 </View>
                 <View style={styles.dataRow}>
-                  <ThemedText style={styles.dataLabel}>Yaw max / min:</ThemedText>
+                  <ThemedText style={styles.dataLabel}>Rotation max / min:</ThemedText>
                   <ThemedText style={styles.dataValue}>
                     {lastRep.metrics.maxYawDeg.toFixed(1)}° / {lastRep.metrics.minYawDeg.toFixed(1)}°
                   </ThemedText>
                 </View>
                 <View style={styles.dataRow}>
-                  <ThemedText style={styles.dataLabel}>Yaw ROM:</ThemedText>
+                  <ThemedText style={styles.dataLabel}>Rotation ROM:</ThemedText>
                   <ThemedText style={styles.dataValue}>
                     {lastRep.metrics.yawRomDeg.toFixed(1)}°
                   </ThemedText>
                 </View>
                 <View style={styles.dataRow}>
-                  <ThemedText style={styles.dataLabel}>Peak hip rotation:</ThemedText>
+                  <ThemedText style={styles.dataLabel}>Peak tibial rotation:</ThemedText>
                   <ThemedText style={styles.dataValue}>
                     {lastRep.metrics.peakHipRotation.toFixed(1)}°
                   </ThemedText>
@@ -530,7 +531,7 @@ export default function DevScreen() {
                             {rep.metrics.durationMs}ms · depth {rep.metrics.rollRomDeg.toFixed(1)}°
                           </ThemedText>
                           <ThemedText style={styles.repHistoryDetail}>
-                            valgus {rep.metrics.peakValgus.toFixed(1)}° · hip rot {rep.metrics.peakHipRotation.toFixed(1)}°
+                            valgus {rep.metrics.peakValgus.toFixed(1)}° · rotation {rep.metrics.peakHipRotation.toFixed(1)}°
                           </ThemedText>
                           <ThemedText style={styles.repHistoryDetail}>
                             tempo {rep.metrics.tempoRatio.toFixed(2)}x
@@ -551,6 +552,11 @@ export default function DevScreen() {
             <View style={styles.cardHeader}>
               <Ionicons name="analytics-outline" size={24} color={tintColor} />
               <ThemedText style={styles.cardTitle}>Sensor Data</ThemedText>
+              {isWarmingUp && (
+                <ThemedText style={{ fontSize: 12, color: tintColor, fontWeight: "600", marginLeft: "auto" }}>
+                  Calibrating...
+                </ThemedText>
+              )}
             </View>
             <View style={styles.cardContent}>
               {/* Packet Info */}
@@ -576,23 +582,23 @@ export default function DevScreen() {
                 </View>
               </View>
 
-              {/* Orientation Data */}
+              {/* Knee Angles */}
               <View style={styles.dataSection}>
-                <ThemedText style={styles.sectionTitle}>Orientation</ThemedText>
+                <ThemedText style={styles.sectionTitle}>Knee Angles</ThemedText>
                 <View style={styles.dataRow}>
-                  <ThemedText style={styles.dataLabel}>Roll:</ThemedText>
+                  <ThemedText style={styles.dataLabel}>Flexion:</ThemedText>
                   <ThemedText style={styles.dataValue}>
                     {latestSample.roll.toFixed(2)}°
                   </ThemedText>
                 </View>
                 <View style={styles.dataRow}>
-                  <ThemedText style={styles.dataLabel}>Pitch:</ThemedText>
+                  <ThemedText style={styles.dataLabel}>Valgus/Varus:</ThemedText>
                   <ThemedText style={styles.dataValue}>
                     {latestSample.pitch.toFixed(2)}°
                   </ThemedText>
                 </View>
                 <View style={styles.dataRow}>
-                  <ThemedText style={styles.dataLabel}>Yaw:</ThemedText>
+                  <ThemedText style={styles.dataLabel}>Tibial Rotation:</ThemedText>
                   <ThemedText style={styles.dataValue}>
                     {latestSample.yaw.toFixed(2)}°
                   </ThemedText>

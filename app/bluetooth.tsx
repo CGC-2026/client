@@ -43,7 +43,7 @@ export default function BluetoothScreen() {
     void (async () => {
       const recovered = await recoverConnectedDeviceNow();
       if (recovered) {
-        router.replace("/my-devices");
+        router.back();
         return;
       }
 
@@ -66,7 +66,7 @@ export default function BluetoothScreen() {
       if (!pairedDevice) {
         const recovered = await recoverConnectedDeviceNow();
         if (recovered) {
-          router.replace("/my-devices");
+          router.back();
           return;
         }
       }
@@ -86,8 +86,8 @@ export default function BluetoothScreen() {
     if (success) {
       // Save paired device ID to storage for auto-reconnection
       await setLastDeviceId(device.id);
-      // Go back to My Devices screen
-      router.replace("/my-devices");
+      // Go back to My Devices screen (back avoids duplicating the my-devices entry)
+      router.back();
     }
   };
 

@@ -78,7 +78,7 @@ export function IOSCSVExportProvider({ children }: { children: ReactNode }) {
       const chunks: string[] = [];
 
       // Add header
-      chunks.push("timestamp,seq,roll,pitch,yaw,flex");
+      chunks.push("timestamp,seq,flexion,valgus,tibial_rotation,flex");
 
       // Generate CSV rows in chunks
       for (let i = 0; i < currentSamples.length; i += CHUNK_SIZE) {

@@ -18,7 +18,7 @@ import { ActivityIndicator, Animated, Pressable, ScrollView, StyleSheet, View } 
 import { Device } from "react-native-ble-plx";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-type OnboardingStep = "welcome" | "scanning" | "success" | "calibration";
+type OnboardingStep = "welcome" | "scanning" | "success" | "placement" | "calibration";
 
 const CALIBRATION_DURATION_MS = 4000;
 
@@ -359,10 +359,71 @@ export default function OnboardingScreen() {
           <View style={styles.bottomActions}>
             <Pressable
               style={[styles.primaryButton, { backgroundColor: tintColor }]}
-              onPress={() => setStep("calibration")}
+              onPress={() => setStep("placement")}
             >
               <ThemedText style={styles.primaryButtonText}>
                 Set Up Calibration
+              </ThemedText>
+              <Ionicons name="arrow-forward" size={20} color="#fff" />
+            </Pressable>
+            <Pressable style={styles.secondaryButton} onPress={handleComplete}>
+              <ThemedText style={styles.secondaryButtonText}>
+                Skip for Now
+              </ThemedText>
+            </Pressable>
+          </View>
+        </SafeAreaView>
+      </ThemedView>
+    );
+  }
+
+  // Placement Step
+  if (step === "placement") {
+    return (
+      <ThemedView style={styles.container}>
+        <Stack.Screen
+          options={{
+            headerShown: true,
+            title: "",
+            headerBackTitle: "Back",
+            headerStyle: {
+              backgroundColor: StyleSheet.flatten(styles.container)
+                .backgroundColor,
+            },
+            headerShadowVisible: false,
+          }}
+        />
+        <SafeAreaView style={styles.safeArea} edges={["bottom"]}>
+          <View style={styles.scanningContent}>
+            <ScreenHeader
+              title="Device Placement"
+              subtitle="Read these instructions before proceeding to calibration."
+            />
+
+            <View style={[styles.instructionsList, { marginTop: 24 }]}>
+              <View style={styles.instructionItem}>
+                <View
+                  style={[
+                    styles.instructionIcon,
+                    { backgroundColor: tintColor },
+                  ]}
+                >
+                  <Ionicons name="information-circle" size={20} color="#fff" />
+                </View>
+                <ThemedText style={styles.calibrationInstructionText}>
+                  When putting the device on, ensure that the wire routes to the right side of the knee. The hole in the front of the sleeve should be centered over the knee and the sleeve should be taught when standing, but still allow for full knee flexion.
+                </ThemedText>
+              </View>
+            </View>
+          </View>
+
+          <View style={styles.bottomActions}>
+            <Pressable
+              style={[styles.primaryButton, { backgroundColor: tintColor }]}
+              onPress={() => setStep("calibration")}
+            >
+              <ThemedText style={styles.primaryButtonText}>
+                Continue to Calibration
               </ThemedText>
               <Ionicons name="arrow-forward" size={20} color="#fff" />
             </Pressable>
