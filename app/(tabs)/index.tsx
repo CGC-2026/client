@@ -6,6 +6,7 @@ import WorkoutTypeListItem from "@/components/workout/WorkoutTypeListItem";
 import { useAuth } from "@/contexts/Auth.Provider";
 import { useBLE } from "@/contexts/BLE.Provider";
 import { useMenu } from "@/contexts/Menu.Provider";
+import { setReplayOnboarding } from "@/helpers/onboardingReplay";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { useWorkoutTypes } from "@/hooks/useWorkoutQueries";
 import { WorkoutType } from "@/types/workout.types";
@@ -50,24 +51,38 @@ export default function HomeScreen() {
     router.push("/my-devices");
   }, [router]);
 
+  const handleHelpPress = useCallback(() => {
+    setReplayOnboarding(true);
+    router.push("/onboarding");
+  }, [router]);
+
   // Configure the navigation header
   useLayoutEffect(() => {
     navigation.setOptions({
-      headerLeft: () => {
-        return createContextMenu({
-          actions: menuActions,
-          onPressAction: handleMenuAction,
-          children: (
-            <View style={styles.headerButton}>
-              <IconSymbol
-                name="person.circle.fill"
-                color={textColor}
-                size={24}
-              />
-            </View>
-          ),
-        });
-      },
+      headerLeft: () => (
+        <View style={styles.headerLeft}>
+          {createContextMenu({
+            actions: menuActions,
+            onPressAction: handleMenuAction,
+            children: (
+              <View style={styles.headerButton}>
+                <IconSymbol
+                  name="person.circle.fill"
+                  color={textColor}
+                  size={24}
+                />
+              </View>
+            ),
+          })}
+          <Pressable style={styles.headerButton} onPress={handleHelpPress}>
+            <IconSymbol
+              name="questionmark.circle"
+              color={textColor}
+              size={24}
+            />
+          </Pressable>
+        </View>
+      ),
       headerRight: () => (
         <Pressable style={styles.headerButton} onPress={handleDevicePress}>
           <IconSymbol
@@ -78,7 +93,7 @@ export default function HomeScreen() {
         </Pressable>
       ),
     });
-  }, [navigation, pairedDevice, textColor, handleMenuAction, handleDevicePress, createContextMenu]);
+  }, [navigation, pairedDevice, textColor, handleMenuAction, handleDevicePress, handleHelpPress, createContextMenu]);
 
   const handleWorkoutTypePress = useCallback((workoutType: WorkoutType) => {
     router.push({ pathname: "/workout/[id]", params: { id: workoutType.id } });
@@ -172,6 +187,10 @@ const createThemedStyles = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  headerLeft: {
+    flexDirection: "row",
+    alignItems: "center",
   },
   centered: {
     flex: 1,

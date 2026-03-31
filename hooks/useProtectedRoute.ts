@@ -1,4 +1,5 @@
 import { useStorage } from "@/contexts/Storage.Provider";
+import { isReplayOnboarding } from "@/helpers/onboardingReplay";
 import { useAuth } from "@clerk/clerk-expo";
 import { useRouter, useSegments } from "expo-router";
 import { useEffect } from "react";
@@ -43,7 +44,10 @@ export function useProtectedRoute() {
       router.replace("/onboarding");
     } else if (isSignedIn && onboardingComplete && onOnboardingScreen) {
       // User has completed onboarding but is on onboarding screen - redirect to app
-      router.replace("/(tabs)");
+      // unless they intentionally replayed onboarding via the ? button
+      if (!isReplayOnboarding()) {
+        router.replace("/(tabs)");
+      }
     }
   }, [isLoaded, isSignedIn, onboardingComplete, isStorageLoading, segments]);
 }

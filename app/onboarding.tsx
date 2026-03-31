@@ -3,6 +3,7 @@ import EmptyState from "@/components/bluetooth/EmptyState";
 import KneeIcon from "@/components/bluetooth/KneeIcon";
 import ScanButton from "@/components/bluetooth/ScanButton";
 import ScreenHeader from "@/components/bluetooth/ScreenHeader";
+import { setReplayOnboarding } from "@/helpers/onboardingReplay";
 import SectionHeader from "@/components/bluetooth/SectionHeader";
 import { ThemedText } from "@/components/ThemedText";
 import { ThemedView } from "@/components/ThemedView";
@@ -140,6 +141,7 @@ export default function OnboardingScreen() {
   );
 
   const handleComplete = useCallback(async () => {
+    setReplayOnboarding(false);
     await setOnboardingComplete(true);
     router.replace("/(tabs)");
   }, [setOnboardingComplete, router]);
@@ -150,6 +152,7 @@ export default function OnboardingScreen() {
 
   const handleSkip = useCallback(async () => {
     stopScan();
+    setReplayOnboarding(false);
     await setOnboardingComplete(true);
     router.replace("/(tabs)");
   }, [stopScan, setOnboardingComplete, router]);
